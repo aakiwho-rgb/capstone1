@@ -1,0 +1,222 @@
+2025-12-16 20:33:51,598 [INFO] HER2_Platform: ✅ All dependencies loaded successfully
+2025-12-16 20:33:51,599 [INFO] HER2_Platform: ModelManager initialized
+2025-12-16 20:33:51,632 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:33:51,632 [INFO] HER2_Platform: STARTING HER2 DRUG DISCOVERY PLATFORM
+2025-12-16 20:33:51,632 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:33:51,632 [INFO] HER2_Platform: Model file missing. Training before server start...
+2025-12-16 20:33:51,632 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:33:51,632 [INFO] HER2_Platform: 🚀 STARTING TRAINING PIPELINE
+2025-12-16 20:33:51,632 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:33:51,710 [INFO] HER2_Platform: Loaded raw data: 10985 rows
+2025-12-16 20:33:51,711 [INFO] HER2_Platform: Preprocessing training data...
+2025-12-16 20:33:51,719 [INFO] HER2_Platform: Removed 4754 duplicate SMILES
+2025-12-16 20:33:51,725 [INFO] HER2_Platform: Preprocessed data: 3574 compounds, 56.52% active
+2025-12-16 20:33:51,726 [INFO] HER2_Platform: Generating features (radius=2, size=2048)...
+2025-12-16 20:33:53,029 [INFO] HER2_Platform: Processed 1000/3574 molecules
+2025-12-16 20:33:54,372 [INFO] HER2_Platform: Processed 2000/3574 molecules
+2025-12-16 20:33:55,759 [INFO] HER2_Platform: Processed 3000/3574 molecules
+2025-12-16 20:33:56,556 [INFO] HER2_Platform: Feature matrix shape: (3574, 2048), Labels: 3574
+2025-12-16 20:33:56,556 [INFO] HER2_Platform: Active compounds: 2020 (56.52%)
+2025-12-16 20:33:56,569 [INFO] HER2_Platform: Train set: 2859 samples, Test set: 715 samples
+2025-12-16 20:33:56,569 [INFO] HER2_Platform: Building and training MLP classifier...
+2025-12-16 20:35:07,681 [INFO] HER2_Platform: Training completed in 15 iterations
+2025-12-16 20:35:07,684 [INFO] HER2_Platform: Evaluating model performance...
+2025-12-16 20:35:07,840 [INFO] HER2_Platform: Accuracy: 0.8643
+2025-12-16 20:35:07,840 [INFO] HER2_Platform: Precision: 0.9252
+2025-12-16 20:35:07,840 [INFO] HER2_Platform: Recall: 0.8267
+2025-12-16 20:35:07,840 [INFO] HER2_Platform: F1-Score: 0.8732
+2025-12-16 20:35:07,841 [INFO] HER2_Platform: Saving model to /Users/testing/Desktop/capstone/backend/models/her2_model.joblib...
+2025-12-16 20:35:07,875 [INFO] HER2_Platform: ✅ Model and metadata saved successfully
+2025-12-16 20:35:07,875 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:35:07,875 [INFO] HER2_Platform: ✅ TRAINING COMPLETED SUCCESSFULLY in 76.24s
+2025-12-16 20:35:07,875 [INFO] HER2_Platform: 📊 Test Accuracy: 86.43%
+2025-12-16 20:35:07,875 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:35:07,884 [INFO] HER2_Platform: Starting Uvicorn server...
+2025-12-16 20:35:08,163 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:35:08,163 [INFO] HER2_Platform: 🚀 HER2 DRUG DISCOVERY PLATFORM STARTING
+2025-12-16 20:35:08,163 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:35:08,163 [INFO] HER2_Platform: Loading model from /Users/testing/Desktop/capstone/backend/models/her2_model.joblib...
+2025-12-16 20:35:08,179 [INFO] HER2_Platform: Model metadata loaded: 2025-12-16T20:35:07.840888
+2025-12-16 20:35:08,179 [INFO] HER2_Platform: ✅ Model loaded and validated successfully
+2025-12-16 20:35:08,179 [INFO] HER2_Platform: ✅ Platform startup complete
+2025-12-16 20:36:42,349 [INFO] HER2_Platform: ✅ All dependencies loaded successfully
+2025-12-16 20:36:42,350 [INFO] HER2_Platform: ModelManager initialized
+2025-12-16 20:36:42,382 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:36:42,382 [INFO] HER2_Platform: STARTING HER2 DRUG DISCOVERY PLATFORM
+2025-12-16 20:36:42,382 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:36:42,382 [INFO] HER2_Platform: Loading model from /Users/testing/Desktop/capstone/backend/models/her2_model.joblib...
+2025-12-16 20:36:42,429 [INFO] HER2_Platform: Model metadata loaded: 2025-12-16T20:35:07.840888
+2025-12-16 20:36:42,429 [INFO] HER2_Platform: ✅ Model loaded and validated successfully
+2025-12-16 20:36:42,429 [INFO] HER2_Platform: Starting Uvicorn server...
+2025-12-16 20:36:42,474 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:36:42,474 [INFO] HER2_Platform: 🚀 HER2 DRUG DISCOVERY PLATFORM STARTING
+2025-12-16 20:36:42,474 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:36:42,475 [INFO] HER2_Platform: Loading model from /Users/testing/Desktop/capstone/backend/models/her2_model.joblib...
+2025-12-16 20:36:42,492 [INFO] HER2_Platform: Model metadata loaded: 2025-12-16T20:35:07.840888
+2025-12-16 20:36:42,492 [INFO] HER2_Platform: ✅ Model loaded and validated successfully
+2025-12-16 20:36:42,492 [INFO] HER2_Platform: ✅ Platform startup complete
+2025-12-16 20:43:57,639 [INFO] HER2_Platform: 🛑 Platform shutting down gracefully...
+2025-12-16 20:43:57,641 [INFO] HER2_Platform: Goodbye!
+2025-12-16 20:44:23,482 [INFO] HER2_Platform: ✅ All dependencies loaded successfully
+2025-12-16 20:44:23,482 [INFO] HER2_Platform: ModelManager initialized
+2025-12-16 20:44:23,526 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:44:23,527 [INFO] HER2_Platform: STARTING HER2 DRUG DISCOVERY PLATFORM
+2025-12-16 20:44:23,527 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:44:23,527 [INFO] HER2_Platform: Model file missing. Training before server start...
+2025-12-16 20:44:23,527 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:44:23,527 [INFO] HER2_Platform: 🚀 STARTING TRAINING PIPELINE
+2025-12-16 20:44:23,527 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:44:23,600 [INFO] HER2_Platform: Loaded raw data: 10985 rows
+2025-12-16 20:44:23,601 [INFO] HER2_Platform: Preprocessing training data...
+2025-12-16 20:44:23,606 [INFO] HER2_Platform: Removed 4754 duplicate SMILES
+2025-12-16 20:44:23,625 [INFO] HER2_Platform: Preprocessed data: 3511 compounds, 55.77% active
+2025-12-16 20:44:23,626 [INFO] HER2_Platform: Generating features (radius=2, size=2048)...
+2025-12-16 20:44:24,995 [INFO] HER2_Platform: Processed 1000/3511 molecules
+2025-12-16 20:44:26,348 [INFO] HER2_Platform: Processed 2000/3511 molecules
+2025-12-16 20:44:27,951 [INFO] HER2_Platform: Processed 3000/3511 molecules
+2025-12-16 20:44:28,739 [INFO] HER2_Platform: Feature matrix shape: (3511, 2048), Labels: 3511
+2025-12-16 20:44:28,739 [INFO] HER2_Platform: Active compounds: 1958 (55.77%)
+2025-12-16 20:44:28,757 [INFO] HER2_Platform: Train set: 2808 samples, Test set: 703 samples
+2025-12-16 20:44:28,757 [INFO] HER2_Platform: Building and training MLP classifier...
+2025-12-16 20:45:01,185 [INFO] HER2_Platform: Training completed in 8 iterations
+2025-12-16 20:45:01,185 [INFO] HER2_Platform: Evaluating model performance...
+2025-12-16 20:45:01,349 [INFO] HER2_Platform: Accuracy: 0.8947
+2025-12-16 20:45:01,349 [INFO] HER2_Platform: Precision: 0.8859
+2025-12-16 20:45:01,349 [INFO] HER2_Platform: Recall: 0.9311
+2025-12-16 20:45:01,349 [INFO] HER2_Platform: F1-Score: 0.9080
+2025-12-16 20:45:01,350 [INFO] HER2_Platform: Saving model to /Users/testing/Desktop/capstone/backend/models/her2_model.joblib...
+2025-12-16 20:45:01,392 [INFO] HER2_Platform: ✅ Model and metadata saved successfully
+2025-12-16 20:45:01,392 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:45:01,392 [INFO] HER2_Platform: ✅ TRAINING COMPLETED SUCCESSFULLY in 37.86s
+2025-12-16 20:45:01,392 [INFO] HER2_Platform: 📊 Test Accuracy: 89.47%
+2025-12-16 20:45:01,392 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:45:01,398 [INFO] HER2_Platform: Starting Uvicorn server...
+2025-12-16 20:45:01,476 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:45:01,476 [INFO] HER2_Platform: 🚀 HER2 DRUG DISCOVERY PLATFORM STARTING
+2025-12-16 20:45:01,476 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:45:01,476 [INFO] HER2_Platform: Loading model from /Users/testing/Desktop/capstone/backend/models/her2_model.joblib...
+2025-12-16 20:45:01,501 [INFO] HER2_Platform: Model metadata loaded: 2025-12-16T20:45:01.350176
+2025-12-16 20:45:01,501 [INFO] HER2_Platform: ✅ Model loaded and validated successfully
+2025-12-16 20:45:01,501 [INFO] HER2_Platform: ✅ Platform startup complete
+2025-12-16 20:51:14,138 [INFO] HER2_Platform: 🛑 Platform shutting down gracefully...
+2025-12-16 20:51:14,139 [INFO] HER2_Platform: Goodbye!
+2025-12-16 20:51:25,710 [INFO] HER2_Platform: ✅ All dependencies loaded successfully
+2025-12-16 20:51:25,710 [INFO] HER2_Platform: ModelManager initialized
+2025-12-16 20:51:25,737 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:51:25,737 [INFO] HER2_Platform: STARTING HER2 DRUG DISCOVERY PLATFORM
+2025-12-16 20:51:25,737 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:51:25,737 [INFO] HER2_Platform: Loading model from /Users/testing/Desktop/capstone/backend/models/her2_model.joblib...
+2025-12-16 20:51:25,778 [INFO] HER2_Platform: Model metadata loaded: 2025-12-16T20:45:01.350176
+2025-12-16 20:51:25,778 [INFO] HER2_Platform: ✅ Model loaded and validated successfully
+2025-12-16 20:51:25,778 [INFO] HER2_Platform: Starting Uvicorn server...
+2025-12-16 20:51:25,828 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:51:25,828 [INFO] HER2_Platform: 🚀 HER2 DRUG DISCOVERY PLATFORM STARTING
+2025-12-16 20:51:25,828 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:51:25,828 [INFO] HER2_Platform: Loading model from /Users/testing/Desktop/capstone/backend/models/her2_model.joblib...
+2025-12-16 20:51:25,846 [INFO] HER2_Platform: Model metadata loaded: 2025-12-16T20:45:01.350176
+2025-12-16 20:51:25,846 [INFO] HER2_Platform: ✅ Model loaded and validated successfully
+2025-12-16 20:51:25,846 [INFO] HER2_Platform: ✅ Platform startup complete
+2025-12-16 20:53:01,759 [INFO] HER2_Platform: ✅ All dependencies loaded successfully
+2025-12-16 20:53:01,761 [INFO] HER2_Platform: ModelManager initialized
+2025-12-16 20:53:01,791 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:53:01,791 [INFO] HER2_Platform: STARTING HER2 DRUG DISCOVERY PLATFORM
+2025-12-16 20:53:01,791 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:53:01,791 [INFO] HER2_Platform: Loading model from /Users/testing/Desktop/capstone/backend/models/her2_model.joblib...
+2025-12-16 20:53:01,836 [INFO] HER2_Platform: Model metadata loaded: 2025-12-16T20:45:01.350176
+2025-12-16 20:53:01,836 [INFO] HER2_Platform: ✅ Model loaded and validated successfully
+2025-12-16 20:53:01,836 [INFO] HER2_Platform: Starting Uvicorn server...
+2025-12-16 20:53:01,881 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:53:01,881 [INFO] HER2_Platform: 🚀 HER2 DRUG DISCOVERY PLATFORM STARTING
+2025-12-16 20:53:01,881 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:53:01,881 [INFO] HER2_Platform: Loading model from /Users/testing/Desktop/capstone/backend/models/her2_model.joblib...
+2025-12-16 20:53:01,899 [INFO] HER2_Platform: Model metadata loaded: 2025-12-16T20:45:01.350176
+2025-12-16 20:53:01,900 [INFO] HER2_Platform: ✅ Model loaded and validated successfully
+2025-12-16 20:53:01,900 [INFO] HER2_Platform: ✅ Platform startup complete
+2025-12-16 20:53:54,509 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:53:54,511 [INFO] HER2_Platform: 🚀 STARTING TRAINING PIPELINE
+2025-12-16 20:53:54,511 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:53:54,661 [INFO] HER2_Platform: Loaded raw data: 10985 rows
+2025-12-16 20:53:54,668 [INFO] HER2_Platform: Preprocessing training data...
+2025-12-16 20:53:54,677 [INFO] HER2_Platform: Removed 4754 duplicate SMILES
+2025-12-16 20:53:54,705 [INFO] HER2_Platform: Preprocessed data: 3511 compounds, 55.77% active
+2025-12-16 20:53:54,706 [INFO] HER2_Platform: Generating features (radius=2, size=2048)...
+2025-12-16 20:53:56,047 [INFO] HER2_Platform: Processed 1000/3511 molecules
+2025-12-16 20:53:57,315 [INFO] HER2_Platform: Processed 2000/3511 molecules
+2025-12-16 20:53:58,594 [INFO] HER2_Platform: Processed 3000/3511 molecules
+2025-12-16 20:53:59,279 [INFO] HER2_Platform: Feature matrix shape: (3511, 2048), Labels: 3511
+2025-12-16 20:53:59,280 [INFO] HER2_Platform: Active compounds: 1958 (55.77%)
+2025-12-16 20:53:59,301 [INFO] HER2_Platform: Train set: 2808 samples, Test set: 703 samples
+2025-12-16 20:53:59,301 [INFO] HER2_Platform: Building and training MLP classifier...
+2025-12-16 20:54:30,474 [INFO] HER2_Platform: Training completed in 8 iterations
+2025-12-16 20:54:30,475 [INFO] HER2_Platform: Evaluating model performance...
+2025-12-16 20:54:30,612 [INFO] HER2_Platform: Accuracy: 0.8947
+2025-12-16 20:54:30,612 [INFO] HER2_Platform: Precision: 0.8859
+2025-12-16 20:54:30,612 [INFO] HER2_Platform: Recall: 0.9311
+2025-12-16 20:54:30,612 [INFO] HER2_Platform: F1-Score: 0.9080
+2025-12-16 20:54:30,612 [INFO] HER2_Platform: Saving model to /Users/testing/Desktop/capstone/backend/models/her2_model.joblib...
+2025-12-16 20:54:30,712 [INFO] HER2_Platform: ✅ Model and metadata saved successfully
+2025-12-16 20:54:30,712 [INFO] HER2_Platform: ================================================================================
+2025-12-16 20:54:30,712 [INFO] HER2_Platform: ✅ TRAINING COMPLETED SUCCESSFULLY in 36.20s
+2025-12-16 20:54:30,712 [INFO] HER2_Platform: 📊 Test Accuracy: 89.47%
+2025-12-16 20:54:30,712 [INFO] HER2_Platform: ================================================================================
+2025-12-16 21:11:29,982 [INFO] HER2_Platform: ✅ All dependencies loaded successfully
+2025-12-16 21:11:29,984 [INFO] HER2_Platform: ModelManager initialized
+2025-12-16 21:11:30,016 [INFO] HER2_Platform: ================================================================================
+2025-12-16 21:11:30,016 [INFO] HER2_Platform: STARTING HER2 DRUG DISCOVERY PLATFORM
+2025-12-16 21:11:30,016 [INFO] HER2_Platform: ================================================================================
+2025-12-16 21:11:30,016 [INFO] HER2_Platform: Loading model from /Users/testing/Desktop/capstone/backend/models/her2_model.joblib...
+2025-12-16 21:11:30,065 [INFO] HER2_Platform: Model metadata loaded: 2025-12-16T20:54:30.612859
+2025-12-16 21:11:30,065 [INFO] HER2_Platform: ✅ Model loaded and validated successfully
+2025-12-16 21:11:30,065 [INFO] HER2_Platform: Starting Uvicorn server...
+2025-12-16 21:11:30,114 [INFO] HER2_Platform: ================================================================================
+2025-12-16 21:11:30,114 [INFO] HER2_Platform: 🚀 HER2 DRUG DISCOVERY PLATFORM STARTING
+2025-12-16 21:11:30,114 [INFO] HER2_Platform: ================================================================================
+2025-12-16 21:11:30,114 [INFO] HER2_Platform: Loading model from /Users/testing/Desktop/capstone/backend/models/her2_model.joblib...
+2025-12-16 21:11:30,132 [INFO] HER2_Platform: Model metadata loaded: 2025-12-16T20:54:30.612859
+2025-12-16 21:11:30,132 [INFO] HER2_Platform: ✅ Model loaded and validated successfully
+2025-12-16 21:11:30,132 [INFO] HER2_Platform: ✅ Platform startup complete
+2025-12-16 21:11:46,421 [INFO] HER2_Platform: ================================================================================
+2025-12-16 21:11:46,422 [INFO] HER2_Platform: 🚀 STARTING TRAINING PIPELINE
+2025-12-16 21:11:46,422 [INFO] HER2_Platform: ================================================================================
+2025-12-16 21:11:46,551 [INFO] HER2_Platform: Loaded raw data: 10985 rows
+2025-12-16 21:11:46,554 [INFO] HER2_Platform: Preprocessing training data...
+2025-12-16 21:11:46,562 [INFO] HER2_Platform: Removed 4754 duplicate SMILES
+2025-12-16 21:11:46,585 [INFO] HER2_Platform: Preprocessed data: 3511 compounds, 55.77% active
+2025-12-16 21:11:46,586 [INFO] HER2_Platform: Generating features (radius=2, size=2048)...
+2025-12-16 21:11:47,895 [INFO] HER2_Platform: Processed 1000/3511 molecules
+2025-12-16 21:11:49,216 [INFO] HER2_Platform: Processed 2000/3511 molecules
+2025-12-16 21:11:50,487 [INFO] HER2_Platform: Processed 3000/3511 molecules
+2025-12-16 21:11:51,157 [INFO] HER2_Platform: Feature matrix shape: (3511, 2048), Labels: 3511
+2025-12-16 21:11:51,158 [INFO] HER2_Platform: Active compounds: 1958 (55.77%)
+2025-12-16 21:11:51,172 [INFO] HER2_Platform: Train set: 2808 samples, Test set: 703 samples
+2025-12-16 21:11:51,172 [INFO] HER2_Platform: Building and training MLP classifier...
+2025-12-16 21:12:22,648 [INFO] HER2_Platform: Training completed in 8 iterations
+2025-12-16 21:12:22,649 [INFO] HER2_Platform: Evaluating model performance...
+2025-12-16 21:12:22,757 [INFO] HER2_Platform: Accuracy: 0.8947
+2025-12-16 21:12:22,757 [INFO] HER2_Platform: Precision: 0.8859
+2025-12-16 21:12:22,757 [INFO] HER2_Platform: Recall: 0.9311
+2025-12-16 21:12:22,757 [INFO] HER2_Platform: F1-Score: 0.9080
+2025-12-16 21:12:22,757 [INFO] HER2_Platform: Saving model to /Users/testing/Desktop/capstone/backend/models/her2_model.joblib...
+2025-12-16 21:12:22,910 [INFO] HER2_Platform: ✅ Model and metadata saved successfully
+2025-12-16 21:12:22,910 [INFO] HER2_Platform: ================================================================================
+2025-12-16 21:12:22,910 [INFO] HER2_Platform: ✅ TRAINING COMPLETED SUCCESSFULLY in 36.49s
+2025-12-16 21:12:22,910 [INFO] HER2_Platform: 📊 Test Accuracy: 89.47%
+2025-12-16 21:12:22,910 [INFO] HER2_Platform: ================================================================================
+2025-12-16 21:13:57,810 [INFO] HER2_Platform: 🛑 Platform shutting down gracefully...
+2025-12-16 21:13:57,810 [INFO] HER2_Platform: Goodbye!
+2025-12-16 21:14:04,548 [INFO] HER2_Platform: ✅ All dependencies loaded successfully
+2025-12-16 21:14:04,549 [INFO] HER2_Platform: ModelManager initialized
+2025-12-16 21:14:04,580 [INFO] HER2_Platform: ================================================================================
+2025-12-16 21:14:04,580 [INFO] HER2_Platform: STARTING HER2 DRUG DISCOVERY PLATFORM
+2025-12-16 21:14:04,580 [INFO] HER2_Platform: ================================================================================
+2025-12-16 21:14:04,580 [INFO] HER2_Platform: Loading model from /Users/testing/Desktop/capstone/backend/models/her2_model.joblib...
+2025-12-16 21:14:04,627 [INFO] HER2_Platform: Model metadata loaded: 2025-12-16T21:12:22.757353
+2025-12-16 21:14:04,627 [INFO] HER2_Platform: ✅ Model loaded and validated successfully
+2025-12-16 21:14:04,627 [INFO] HER2_Platform: Starting Uvicorn server...
+2025-12-16 21:14:04,669 [INFO] HER2_Platform: ================================================================================
+2025-12-16 21:14:04,669 [INFO] HER2_Platform: 🚀 HER2 DRUG DISCOVERY PLATFORM STARTING
+2025-12-16 21:14:04,669 [INFO] HER2_Platform: ================================================================================
+2025-12-16 21:14:04,669 [INFO] HER2_Platform: Loading model from /Users/testing/Desktop/capstone/backend/models/her2_model.joblib...
+2025-12-16 21:14:04,686 [INFO] HER2_Platform: Model metadata loaded: 2025-12-16T21:12:22.757353
+2025-12-16 21:14:04,686 [INFO] HER2_Platform: ✅ Model loaded and validated successfully
+2025-12-16 21:14:04,686 [INFO] HER2_Platform: ✅ Platform startup complete

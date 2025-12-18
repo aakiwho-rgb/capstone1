@@ -1,0 +1,16 @@
+# HER2 Drug Discovery FastAPI Backend
+# Requirements for running main.py
+
+# Web Framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# Machine Learning
+tensorflow>=2.15.0
+numpy>=1.24.0
+
+# Chemistry/RDKit
+rdkit>=2023.9.1
+
+# Data Validation (included with FastAPI but listed for clarity)
+pydantic>=2.0.0
