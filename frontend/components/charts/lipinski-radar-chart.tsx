@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 interface LipinskiRadarChartProps {
   lipinski: LipinskiStats;
   className?: string;
+  compact?: boolean;
 }
 
 // Lipinski Rule of 5 thresholds
@@ -33,6 +34,7 @@ const LIPINSKI_THRESHOLDS = {
 export function LipinskiRadarChart({
   lipinski,
   className = "",
+  compact = false,
 }: LipinskiRadarChartProps) {
   // Normalize values to percentage of threshold (capped at 150% for visualization)
   const data = [
@@ -116,25 +118,27 @@ export function LipinskiRadarChart({
 
   return (
     <div className={cn("w-full", className)} role="img" aria-label="Lipinski Rule of 5 compliance chart">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="text-sm font-medium text-foreground">Lipinski Rule of 5</h4>
-        <span
-          className={cn(
-            "text-xs font-medium px-2.5 py-1 rounded-full border",
-            violations === 0
-              ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400"
-              : violations <= 1
-              ? "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400"
-              : "bg-red-500/10 text-red-600 border-red-500/20 dark:text-red-400"
-          )}
-        >
-          {violations === 0
-            ? "Drug-like"
-            : `${violations} violation${violations > 1 ? "s" : ""}`}
-        </span>
-      </div>
-      <ResponsiveContainer width="100%" height={260}>
-        <RadarChart data={data} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
+      {!compact && (
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-sm font-medium text-foreground">Lipinski Rule of 5</h4>
+          <span
+            className={cn(
+              "text-xs font-medium px-2.5 py-1 rounded-full border",
+              violations === 0
+                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400"
+                : violations <= 1
+                ? "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400"
+                : "bg-red-500/10 text-red-600 border-red-500/20 dark:text-red-400"
+            )}
+          >
+            {violations === 0
+              ? "Drug-like"
+              : `${violations} violation${violations > 1 ? "s" : ""}`}
+          </span>
+        </div>
+      )}
+      <ResponsiveContainer width="100%" height={compact ? 100 : 260}>
+        <RadarChart data={data} margin={compact ? { top: 5, right: 20, bottom: 5, left: 20 } : { top: 20, right: 30, bottom: 20, left: 30 }}>
           <PolarGrid 
             stroke="hsl(var(--border))" 
             strokeOpacity={0.5}
@@ -142,28 +146,30 @@ export function LipinskiRadarChart({
           <PolarAngleAxis
             dataKey="property"
             tick={{ 
-              fontSize: 12, 
+              fontSize: compact ? 9 : 12, 
               fill: "hsl(var(--muted-foreground))",
               fontWeight: 500
             }}
           />
-          <PolarRadiusAxis
-            angle={90}
-            domain={[0, 150]}
-            tick={{ 
-              fontSize: 10, 
-              fill: "hsl(var(--muted-foreground))" 
-            }}
-            tickFormatter={(value) => `${value}%`}
-            axisLine={false}
-          />
+          {!compact && (
+            <PolarRadiusAxis
+              angle={90}
+              domain={[0, 150]}
+              tick={{ 
+                fontSize: 10, 
+                fill: "hsl(var(--muted-foreground))" 
+              }}
+              tickFormatter={(value) => `${value}%`}
+              axisLine={false}
+            />
+          )}
           {/* Threshold line at 100% */}
           <Radar
             name="Threshold"
             dataKey={() => 100}
             stroke="hsl(var(--muted-foreground))"
             fill="none"
-            strokeWidth={2}
+            strokeWidth={compact ? 1 : 2}
             strokeDasharray="5 5"
             strokeOpacity={0.6}
           />
@@ -174,15 +180,17 @@ export function LipinskiRadarChart({
             stroke="hsl(var(--primary))"
             fill="hsl(var(--primary))"
             fillOpacity={0.25}
-            strokeWidth={2}
+            strokeWidth={compact ? 1.5 : 2}
           />
           <Tooltip content={<CustomTooltip />} />
-          <Legend
-            wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }}
-            formatter={(value) => (
-              <span className="text-muted-foreground">{value}</span>
-            )}
-          />
+          {!compact && (
+            <Legend
+              wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }}
+              formatter={(value) => (
+                <span className="text-muted-foreground">{value}</span>
+              )}
+            />
+          )}
         </RadarChart>
       </ResponsiveContainer>
     </div>

@@ -5,6 +5,7 @@ import joblib
 import threading
 import numpy as np
 import pandas as pd
+import httpx
 from typing import List, Optional, Dict, Any, Tuple
 from pathlib import Path
 from datetime import datetime
@@ -115,6 +116,14 @@ class MoleculeSVGRequest(BaseModel):
 class MoleculeSVGResponse(BaseModel):
     smiles: str
     svg: str
+    status: str = "success"
+
+class NameToSmilesRequest(BaseModel):
+    name: str = Field(..., min_length=1, description="Molecule name to convert to SMILES")
+
+class NameToSmilesResponse(BaseModel):
+    name: str
+    smiles: str
     status: str = "success"
 
 class HealthResponse(BaseModel):
@@ -561,6 +570,80 @@ async def generate_molecule_svg(payload: MoleculeSVGRequest):
     except Exception as e:
         logger.error(f"SVG generation failed: {e}")
         raise HTTPException(status_code=500, detail="Failed to generate molecule SVG")
+
+@app.post("/molecule/name-to-smiles", response_model=NameToSmilesResponse)
+async def convert_name_to_smiles(payload: NameToSmilesRequest):
+    """Convert a molecule name to SMILES using PubChem API"""
+    name = payload.name.strip()
+    
+    # First check if it's already a valid SMILES
+    mol = Chem.MolFromSmiles(name)
+    if mol:
+        return NameToSmilesResponse(
+            name=name,
+            smiles=name,
+            status="success"
+        )
+    
+    try:
+        # Query PubChem API
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            # Try compound name first - request both IsomericSMILES and CanonicalSMILES
+            url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{name}/property/IsomericSMILES,CanonicalSMILES/JSON"
+            response = await client.get(url)
+            
+            if response.status_code == 200:
+                data = response.json()
+                props = data.get("PropertyTable", {}).get("Properties", [{}])[0]
+                # Try different SMILES fields
+                smiles = props.get("IsomericSMILES") or props.get("CanonicalSMILES") or props.get("ConnectivitySMILES")
+                
+                if smiles:
+                    # Validate the SMILES with RDKit
+                    mol = Chem.MolFromSmiles(smiles)
+                    if mol:
+                        return NameToSmilesResponse(
+                            name=name,
+                            smiles=smiles,
+                            status="success"
+                        )
+            
+            # Try getting CID first, then SMILES
+            url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{name}/cids/JSON"
+            response = await client.get(url)
+            
+            if response.status_code == 200:
+                data = response.json()
+                cids = data.get("IdentifierList", {}).get("CID", [])
+                if cids:
+                    cid = cids[0]
+                    # Get SMILES from CID
+                    url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{cid}/property/IsomericSMILES/JSON"
+                    response = await client.get(url)
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        props = data.get("PropertyTable", {}).get("Properties", [{}])[0]
+                        smiles = props.get("IsomericSMILES") or props.get("CanonicalSMILES")
+                        
+                        if smiles:
+                            mol = Chem.MolFromSmiles(smiles)
+                            if mol:
+                                return NameToSmilesResponse(
+                                    name=name,
+                                    smiles=smiles,
+                                    status="success"
+                                )
+        
+        raise HTTPException(status_code=404, detail=f"Could not find molecule: {name}")
+        
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="PubChem API timeout. Please try again.")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Name to SMILES conversion failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to convert name to SMILES: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

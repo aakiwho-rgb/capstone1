@@ -14,6 +14,8 @@ import {
   FlaskConical,
   BarChart3,
   Loader2,
+  Atom,
+  Target,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -28,19 +30,19 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { BentoGrid, BentoGridItem } from "@/components/ui/bento-grid";
 import { MoleculeViewer } from "@/components/ui/molecule-viewer";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -48,15 +50,26 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { PropertyBadge } from "@/components/ui/property-badge";
 import { LipinskiRadarChart } from "@/components/charts/lipinski-radar-chart";
 import { DescriptorsBarChart } from "@/components/charts/descriptors-bar-chart";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { ToggleTheme } from "@/components/ui/toggle-theme";
 import { api } from "@/lib/api";
 import type { PredictionResponse, ModelInfoResponse } from "@/types/api";
 
-// Real compounds from HER2 training data
-const EXAMPLE_MOLECULES = {
-  active: "CN1CCN(CCC#CC(=O)Nc2cc3c(Nc4ccc(F)c(Cl)c4)ncnc3cn2)CC1",
-  inactive: "N#C/C(=C\\c1ccc(O)c(O)c1)C(=O)c1ccc(F)cc1",
-} as const;
+// Real compounds from HER2 training data (from CHEMBL1824_bioactivity.csv)
+const ACTIVE_EXAMPLES = [
+  { name: "Sorafenib", smiles: "CNC(=O)c1cc(Oc2ccc(NC(=O)Nc3ccc(Cl)c(C(F)(F)F)c3)cc2)ccn1" },
+  { name: "Dacomitinib", smiles: "COc1cc2ncnc(Nc3ccc(F)c(Cl)c3)c2cc1NC(=O)/C=C/CN1CCCCC1" },
+  { name: "Erlotinib", smiles: "C#Cc1cccc(Nc2ncnc3cc(OCCOC)c(OCCOC)cc23)c1" },
+  { name: "Pelitinib", smiles: "CCOc1cc2ncc(C#N)c(Nc3ccc(F)c(Cl)c3)c2cc1NC(=O)/C=C/CN(C)C" },
+  { name: "Canertinib", smiles: "C=CC(=O)Nc1cc2c(Nc3ccc(F)c(Cl)c3)ncnc2cc1OCCCN1CCOCC1" },
+] as const;
+
+const INACTIVE_EXAMPLES = [
+  { name: "Bezafibrate", smiles: "CC(C)(Oc1ccc(CCNC(=O)c2ccc(Cl)cc2)cc1)C(=O)O" },
+  { name: "Fluorouracil", smiles: "O=c1[nH]cc(F)c(=O)[nH]1" },
+  { name: "Genistein", smiles: "O=c1c(-c2ccc(O)cc2)coc2cc(O)cc(O)c12" },
+  { name: "Clenbuterol", smiles: "CC(C)(C)NCC(O)c1cc(Cl)c(N)c(Cl)c1" },
+  { name: "Domperidone", smiles: "O=c1[nH]c2ccccc2n1CCCN1CCC(n2c(=O)[nH]c3cc(Cl)ccc32)CC1" },
+] as const;
 
 export default function Dashboard() {
   const [smiles, setSmiles] = useState("");
@@ -68,7 +81,7 @@ export default function Dashboard() {
 
   const checkHealth = useCallback(async () => {
     try {
-      const data = await api.checkHealth();
+      await api.checkHealth();
       setSystemStatus("online");
       if (!modelInfo) {
         try {
@@ -90,15 +103,37 @@ export default function Dashboard() {
   }, [checkHealth]);
 
   const handlePredict = async () => {
-    const trimmedSmiles = smiles.trim();
-    if (!trimmedSmiles) {
-      toast.error("Please enter a valid SMILES string");
+    const input = smiles.trim();
+    if (!input) {
+      toast.error("Please enter a SMILES string or molecule name");
       return;
     }
     setLoading(true);
     setResult(null);
     try {
-      const data = await api.predict(trimmedSmiles);
+      // Check if input looks like a SMILES - must contain typical SMILES special characters
+      // SMILES typically have: parentheses, brackets, =, #, numbers, or lowercase letters (aromatic)
+      const hasSmilesChars = /[[\]()=#@/\\]/.test(input) || /[a-z]/.test(input);
+      const isCapitalizedWord = /^[A-Z][A-Za-z]*$/.test(input); // Like "Aspirin", "Erlotinib"
+      const hasSpaces = input.includes(" ");
+      
+      let smilesString = input;
+      
+      // If it looks like a molecule name (no SMILES special chars, or is a capitalized word)
+      if (!hasSmilesChars || isCapitalizedWord || hasSpaces) {
+        toast.info("Looking up molecule name...");
+        try {
+          const nameResult = await api.nameToSmiles(input);
+          smilesString = nameResult.smiles;
+          toast.success(`Found: ${input}`);
+        } catch (nameError: any) {
+          // If name lookup fails, try as SMILES anyway
+          toast.warning("Name lookup failed, trying as SMILES...");
+          smilesString = input;
+        }
+      }
+      
+      const data = await api.predict(smilesString);
       setResult(data);
       toast.success("Prediction complete!");
     } catch (error: any) {
@@ -127,198 +162,168 @@ export default function Dashboard() {
     }
   };
 
-  const getPropertyStatus = (value: number, threshold: number): "optimal" | "warning" => {
-    return value <= threshold ? "optimal" : "warning";
-  };
-
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 sm:h-16 items-center justify-between px-4 sm:px-6 lg:px-8 mx-auto max-w-7xl">
+        <div className="container flex h-12 items-center justify-between px-4 sm:px-6 lg:px-8 mx-auto max-w-7xl">
           <div className="flex items-center gap-2">
-            <Dna className="h-5 w-5 sm:h-6 sm:w-6 text-primary" aria-hidden="true" />
-            <h1 className="text-lg sm:text-xl font-semibold tracking-tight">OncoScope</h1>
+            <Dna className="h-5 w-5 text-primary" aria-hidden="true" />
+            <h1 className="text-lg font-semibold tracking-tight">OncoScope</h1>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">Status:</span>
+          <div className="flex items-center gap-2">
             <StatusBadge
               variant={systemStatus === "online" ? "success" : systemStatus === "offline" ? "error" : "neutral"}
               pulse={systemStatus === "online"}
               aria-live="polite"
             >
-              {systemStatus === "checking" ? "Connecting..." : systemStatus === "online" ? "Online" : "Offline"}
+              {systemStatus === "checking" ? "..." : systemStatus === "online" ? "Online" : "Offline"}
             </StatusBadge>
-            <ThemeToggle />
+            <ToggleTheme />
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 flex-1">
-        {/* Hero */}
-        <div className="text-center space-y-2 pb-2">
-          <h2 className="text-xl sm:text-2xl font-semibold tracking-tight">AI-Powered HER2 Bioactivity Prediction</h2>
-          <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">
-            Analyze molecular structures for potential HER2 inhibitory activity using machine learning
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-          {/* Input Section */}
-          <section aria-labelledby="input-heading">
-            <Card>
-              <CardHeader>
-                <CardTitle id="input-heading" className="flex items-center gap-2 text-base">
-                  <TestTube2 className="h-5 w-5 text-primary" aria-hidden="true" />
+      <main className="container mx-auto max-w-7xl px-2 py-2 flex-1">
+        {/* Two Column Layout: Input + Results */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2">
+          {/* Input Panel - Fixed Width */}
+          <div className="lg:col-span-3">
+            <Card className="h-full">
+              <CardHeader className="p-3 pb-2">
+                <CardTitle className="flex items-center gap-2 text-sm">
+                  <TestTube2 className="h-4 w-4 text-primary" aria-hidden="true" />
                   Molecular Input
                 </CardTitle>
-                <CardDescription>Enter a SMILES string to analyze its potential as a HER2 inhibitor</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <label htmlFor="smiles-input" className="sr-only">SMILES string input</label>
-                  <Textarea
-                    id="smiles-input"
-                    placeholder="Enter SMILES string e.g., CN1CCN(CCC#CC(=O)Nc2cc3c..."
-                    className="min-h-[120px] sm:min-h-[150px] font-mono text-sm resize-none"
-                    value={smiles}
-                    onChange={(e) => setSmiles(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    aria-describedby="smiles-hint"
-                  />
-                  <p id="smiles-hint" className="text-xs text-muted-foreground">
-                    Press <kbd className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-mono">⌘+Enter</kbd> to run prediction
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setSmiles(EXAMPLE_MOLECULES.active)}>
-                    Load Active Example
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => setSmiles(EXAMPLE_MOLECULES.inactive)}>
-                    Load Inactive Example
-                  </Button>
+              <CardContent className="p-3 pt-0 space-y-2">
+                <Textarea
+                  id="smiles-input"
+                  placeholder="Enter SMILES string or molecule name (e.g., Aspirin, Lapatinib)"
+                  className="min-h-[100px] font-mono text-xs resize-none"
+                  value={smiles}
+                  onChange={(e) => setSmiles(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                />
+                <div className="grid grid-cols-2 gap-1">
+                  <Select onValueChange={(val) => setSmiles(val)}>
+                    <SelectTrigger className="h-7 text-xs">
+                      <SelectValue placeholder="Active" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ACTIVE_EXAMPLES.map((mol) => (
+                        <SelectItem key={mol.name} value={mol.smiles} className="text-xs">
+                          {mol.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select onValueChange={(val) => setSmiles(val)}>
+                    <SelectTrigger className="h-7 text-xs">
+                      <SelectValue placeholder="Inactive" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {INACTIVE_EXAMPLES.map((mol) => (
+                        <SelectItem key={mol.name} value={mol.smiles} className="text-xs">
+                          {mol.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </CardContent>
-              <CardFooter>
+              <CardFooter className="p-3 pt-0">
                 <Button
                   className="w-full"
-                  size="lg"
+                  size="sm"
                   onClick={handlePredict}
                   disabled={loading || systemStatus !== "online"}
                   aria-busy={loading}
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-                      Analyzing Structure...
+                      <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                      Analyzing...
                     </>
                   ) : (
                     <>
-                      <Zap className="mr-2 h-4 w-4" aria-hidden="true" />
+                      <Zap className="mr-2 h-3.5 w-3.5" aria-hidden="true" />
                       Run Prediction
                     </>
                   )}
                 </Button>
               </CardFooter>
             </Card>
-          </section>
+          </div>
 
-          {/* Results Section */}
-          <section aria-labelledby="results-heading" aria-live="polite">
-            <h2 id="results-heading" className="sr-only">Prediction Results</h2>
+          {/* Results Panel - Bento Grid */}
+          <div className="lg:col-span-9" aria-live="polite">
             {loading ? (
-              <LoadingState variant="full" />
+              <div className="h-full min-h-[350px] flex items-center justify-center">
+                <LoadingState variant="card" />
+              </div>
             ) : result ? (
-              <ResultsDisplay result={result} getPropertyStatus={getPropertyStatus} />
+              <ResultsBento result={result} />
             ) : (
-              <EmptyState
-                icon={<Activity className="h-12 w-12" />}
-                title="Ready to Analyze"
-                description="Enter a SMILES string and run a prediction to see the bioactivity analysis results."
-                className="h-full min-h-[300px]"
-              />
+              <div className="h-full min-h-[350px] flex items-center justify-center rounded-lg border border-dashed border-border bg-muted/20">
+                <EmptyState
+                  icon={<Activity className="h-10 w-10" />}
+                  title="Ready to Analyze"
+                  description="Enter a SMILES string to see results"
+                />
+              </div>
             )}
-          </section>
+          </div>
         </div>
 
-        {/* Admin Section */}
-        <section className="pt-6 border-t border-border" aria-labelledby="admin-heading">
-          <h2 id="admin-heading" className="sr-only">Administration</h2>
-          <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="diagnostics" className="border-b-0">
-              <AccordionTrigger className="text-muted-foreground hover:text-foreground hover:no-underline py-3">
-                <div className="flex items-center gap-2">
-                  <Server className="h-4 w-4" aria-hidden="true" />
-                  <span>Model Diagnostics & Administration</span>
+        {/* Admin Section - Collapsible */}
+        <Accordion type="single" collapsible className="w-full mt-2">
+          <AccordionItem value="diagnostics" className="border rounded-lg px-3">
+            <AccordionTrigger className="text-xs text-muted-foreground hover:text-foreground hover:no-underline py-2">
+              <div className="flex items-center gap-2">
+                <Server className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>Model Administration</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pb-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div>
+                  <span className="text-muted-foreground">Status:</span>
+                  <span className="ml-1 font-medium capitalize">{modelInfo?.status || "Unknown"}</span>
                 </div>
-              </AccordionTrigger>
-              <AccordionContent className="pt-4">
-                <Card className="bg-muted/30">
-                  <CardContent className="p-4 sm:p-6 grid gap-6 sm:grid-cols-2">
-                    <div className="space-y-4">
-                      <h3 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Current Model Stats</h3>
-                      <dl className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <dt className="text-muted-foreground text-xs">Status</dt>
-                          <dd className="font-medium capitalize">{modelInfo?.status || "Unknown"}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-muted-foreground text-xs">Backend</dt>
-                          <dd className="font-medium">RandomForest</dd>
-                        </div>
-                        <div className="col-span-2">
-                          <dt className="text-muted-foreground text-xs">Last Trained</dt>
-                          <dd className="font-medium truncate">
-                            {modelInfo?.metadata?.training_date
-                              ? new Date(modelInfo.metadata.training_date).toLocaleString()
-                              : "N/A"}
-                          </dd>
-                        </div>
-                        {modelInfo?.metadata?.metrics && (
-                          <>
-                            <div>
-                              <dt className="text-muted-foreground text-xs">Accuracy</dt>
-                              <dd className="font-medium">{(modelInfo.metadata.metrics.accuracy * 100).toFixed(1)}%</dd>
-                            </div>
-                            <div>
-                              <dt className="text-muted-foreground text-xs">F1 Score</dt>
-                              <dd className="font-medium">{(modelInfo.metadata.metrics.f1_score * 100).toFixed(1)}%</dd>
-                            </div>
-                          </>
-                        )}
-                      </dl>
+                <div>
+                  <span className="text-muted-foreground">Backend:</span>
+                  <span className="ml-1 font-medium">RandomForest</span>
+                </div>
+                {modelInfo?.metadata?.metrics && (
+                  <>
+                    <div>
+                      <span className="text-muted-foreground">Accuracy:</span>
+                      <span className="ml-1 font-medium">{(modelInfo.metadata.metrics.accuracy * 100).toFixed(1)}%</span>
                     </div>
-                    <div className="flex flex-col justify-end items-start sm:items-end gap-3 border-t sm:border-t-0 sm:border-l border-border pt-4 sm:pt-0 sm:pl-6">
-                      <p className="text-xs text-muted-foreground sm:text-right">
-                        Trigger a full model retrain using the latest dataset
-                      </p>
-                      <Button variant="destructive" onClick={handleRetrain} disabled={isRetraining}>
-                        {isRetraining ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Training...
-                          </>
-                        ) : (
-                          <>
-                            <RefreshCcw className="mr-2 h-4 w-4" />
-                            Retrain Model
-                          </>
-                        )}
-                      </Button>
+                    <div>
+                      <span className="text-muted-foreground">F1:</span>
+                      <span className="ml-1 font-medium">{(modelInfo.metadata.metrics.f1_score * 100).toFixed(1)}%</span>
                     </div>
-                  </CardContent>
-                </Card>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </section>
+                  </>
+                )}
+                <div className="col-span-2 sm:col-span-4 pt-2">
+                  <Button variant="destructive" size="sm" className="h-7 text-xs" onClick={handleRetrain} disabled={isRetraining}>
+                    {isRetraining ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : <RefreshCcw className="mr-1.5 h-3 w-3" />}
+                    {isRetraining ? "Training..." : "Retrain Model"}
+                  </Button>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </main>
 
       {/* Footer */}
       <footer className="border-t border-border mt-auto">
-        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4">
-          <p className="text-xs text-muted-foreground text-center">
-            OncoScope — AI-Powered Drug Discovery Platform • For research purposes only
+        <div className="container mx-auto max-w-7xl px-4 py-2">
+          <p className="text-[10px] text-muted-foreground text-center">
+            OncoScope — AI-Powered Drug Discovery • Research Use Only
           </p>
         </div>
       </footer>
@@ -326,191 +331,164 @@ export default function Dashboard() {
   );
 }
 
-// Separated Results component for better organization
-interface ResultsDisplayProps {
-  result: PredictionResponse;
-  getPropertyStatus: (value: number, threshold: number) => "optimal" | "warning";
-}
-
-function ResultsDisplay({ result, getPropertyStatus }: ResultsDisplayProps) {
+// Bento Grid Results Display
+function ResultsBento({ result }: { result: PredictionResponse }) {
   const isActive = result.prediction === "Active";
 
+  // Lipinski summary
+  const lipinskiData = [
+    { label: "MW", value: result.lipinski.MW, unit: "Da", threshold: 500 },
+    { label: "LogP", value: result.lipinski.LogP, unit: "", threshold: 5 },
+    { label: "HBD", value: result.lipinski.NumHDonors, unit: "", threshold: 5 },
+    { label: "HBA", value: result.lipinski.NumHAcceptors, unit: "", threshold: 10 },
+  ];
+
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Verdict Card */}
-      <Card
-        className={`border-2 ${
+    <BentoGrid className="md:grid-cols-4 md:auto-rows-[8.5rem] gap-1">
+      {/* Prediction Result - Spans 2 cols */}
+      <BentoGridItem
+        className={`md:col-span-2 ${
           isActive
-            ? "border-emerald-500/50 bg-emerald-500/5 dark:bg-emerald-500/10"
-            : "border-red-500/50 bg-red-500/5 dark:bg-red-500/10"
+            ? "border-emerald-500/40 bg-emerald-500/5"
+            : "border-red-500/40 bg-red-500/5"
         }`}
-      >
-        <CardContent className="pt-6 p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-            <div className="flex-shrink-0">
-              <MoleculeViewer smiles={result.smiles} width={160} height={160} />
-            </div>
-            <div className="flex flex-col items-center sm:items-start text-center sm:text-left flex-1 space-y-3">
-              <div className="flex items-center gap-3">
+        header={
+          <div className="flex items-center justify-between h-full">
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
                 {isActive ? (
-                  <CheckCircle2 className="h-8 w-8 sm:h-10 sm:w-10 text-emerald-500" aria-hidden="true" />
+                  <CheckCircle2 className="h-6 w-6 text-emerald-500" />
                 ) : (
-                  <AlertCircle className="h-8 w-8 sm:h-10 sm:w-10 text-red-500" aria-hidden="true" />
+                  <AlertCircle className="h-6 w-6 text-red-500" />
                 )}
-                <h3
-                  className={`text-xl sm:text-2xl font-bold tracking-tight ${
-                    isActive ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
-                  }`}
-                >
-                  {result.prediction.toUpperCase()} CANDIDATE
-                </h3>
+                <span className={`text-base font-bold ${isActive ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+                  {result.prediction.toUpperCase()}
+                </span>
               </div>
-              <p className="text-muted-foreground">
-                Confidence: <span className="text-lg font-bold text-foreground">{(result.confidence * 100).toFixed(1)}%</span>
-              </p>
-              <div className="w-full max-w-sm space-y-1.5">
-                <div className="flex justify-between text-xs sm:text-sm">
-                  <span className="text-muted-foreground">HER2 Inhibition Probability</span>
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-muted-foreground">Confidence:</span>
+                  <span className="font-semibold">{(result.confidence * 100).toFixed(1)}%</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-muted-foreground">HER2 Prob:</span>
                   <span className="font-semibold text-primary">{(result.probability * 100).toFixed(1)}%</span>
                 </div>
-                <Progress value={result.probability * 100} className="h-2.5" />
+                <Progress value={result.probability * 100} className="h-1.5 w-32" />
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        }
+        title={<span className="text-xs">Bioactivity Prediction</span>}
+        icon={<Target className="h-3.5 w-3.5 text-primary" />}
+      />
 
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <FlaskConical className="h-4 w-4 text-primary" aria-hidden="true" />
-              Drug-Likeness Analysis
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <LipinskiRadarChart lipinski={result.lipinski} />
-          </CardContent>
-        </Card>
-        {result.descriptors && (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-primary" aria-hidden="true" />
-                Molecular Properties
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <DescriptorsBarChart descriptors={result.descriptors} />
-            </CardContent>
-          </Card>
-        )}
-      </div>
+      {/* Molecule Viewer - Spans 2 cols */}
+      <BentoGridItem
+        className="md:col-span-2"
+        header={
+          <div className="flex items-center justify-center h-full">
+            <MoleculeViewer smiles={result.smiles} width={160} height={100} />
+          </div>
+        }
+        title={<span className="text-xs truncate max-w-[200px]">{result.smiles.slice(0, 30)}...</span>}
+        icon={<Atom className="h-3.5 w-3.5 text-primary" />}
+      />
 
-      {/* Descriptors Table */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Beaker className="h-4 w-4 text-primary" aria-hidden="true" />
-            Detailed Molecular Descriptors
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Descriptor</TableHead>
-                <TableHead className="text-right">Value</TableHead>
-                <TableHead className="text-right">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow>
-                <TableCell className="font-medium">Molecular Weight</TableCell>
-                <TableCell className="text-right tabular-nums">{result.lipinski.MW} Da</TableCell>
-                <TableCell className="text-right">
-                  <PropertyBadge status={getPropertyStatus(result.lipinski.MW, 500)}>
-                    {result.lipinski.MW <= 500 ? "Optimal" : "High"}
+      {/* Lipinski Radar Chart */}
+      <BentoGridItem
+        className="md:col-span-2"
+        header={
+          <div className="w-full h-full">
+            <LipinskiRadarChart lipinski={result.lipinski} compact />
+          </div>
+        }
+        title={<span className="text-xs">Drug-Likeness</span>}
+        icon={<FlaskConical className="h-3.5 w-3.5 text-primary" />}
+      />
+
+      {/* Descriptors Bar Chart */}
+      {result.descriptors && (
+        <BentoGridItem
+          className="md:col-span-2"
+          header={
+            <div className="w-full h-full">
+              <DescriptorsBarChart descriptors={result.descriptors} compact />
+            </div>
+          }
+          title={<span className="text-xs">Molecular Properties</span>}
+          icon={<BarChart3 className="h-3.5 w-3.5 text-primary" />}
+        />
+      )}
+
+      {/* Lipinski Properties Summary - Spans 4 cols */}
+      <BentoGridItem
+        className="md:col-span-4"
+        header={
+          <div className="grid grid-cols-4 sm:grid-cols-8 gap-1 w-full">
+            {lipinskiData.map((item) => (
+              <div key={item.label} className="flex flex-col items-center p-1.5 rounded bg-muted/50">
+                <span className="text-[9px] text-muted-foreground uppercase">{item.label}</span>
+                <span className="text-xs font-semibold tabular-nums">{typeof item.value === 'number' ? item.value.toFixed(1) : item.value}</span>
+                <PropertyBadge 
+                  status={Number(item.value) <= item.threshold ? "optimal" : "warning"} 
+                  className="text-[8px] px-1 py-0"
+                  showIcon={false}
+                >
+                  {Number(item.value) <= item.threshold ? "OK" : "High"}
+                </PropertyBadge>
+              </div>
+            ))}
+            {result.descriptors && (
+              <>
+                <div className="flex flex-col items-center p-1.5 rounded bg-muted/50">
+                  <span className="text-[9px] text-muted-foreground uppercase">TPSA</span>
+                  <span className="text-xs font-semibold tabular-nums">{result.descriptors.TPSA.toFixed(1)}</span>
+                  <PropertyBadge 
+                    status={result.descriptors.TPSA <= 140 ? "optimal" : "warning"}
+                    className="text-[8px] px-1 py-0"
+                    showIcon={false}
+                  >
+                    {result.descriptors.TPSA <= 140 ? "OK" : "High"}
                   </PropertyBadge>
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">LogP (Lipophilicity)</TableCell>
-                <TableCell className="text-right tabular-nums">{result.lipinski.LogP}</TableCell>
-                <TableCell className="text-right">
-                  <PropertyBadge status={getPropertyStatus(result.lipinski.LogP, 5)}>
-                    {result.lipinski.LogP <= 5 ? "Optimal" : "High"}
+                </div>
+                <div className="flex flex-col items-center p-1.5 rounded bg-muted/50">
+                  <span className="text-[9px] text-muted-foreground uppercase">RotB</span>
+                  <span className="text-xs font-semibold tabular-nums">{result.descriptors.NumRotatableBonds}</span>
+                  <PropertyBadge 
+                    status={result.descriptors.NumRotatableBonds <= 10 ? "optimal" : "warning"}
+                    className="text-[8px] px-1 py-0"
+                    showIcon={false}
+                  >
+                    {result.descriptors.NumRotatableBonds <= 10 ? "OK" : "High"}
                   </PropertyBadge>
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">H-Bond Donors</TableCell>
-                <TableCell className="text-right tabular-nums">{result.lipinski.NumHDonors}</TableCell>
-                <TableCell className="text-right">
-                  <PropertyBadge status={getPropertyStatus(result.lipinski.NumHDonors, 5)}>
-                    {result.lipinski.NumHDonors <= 5 ? "Optimal" : "High"}
+                </div>
+                <div className="flex flex-col items-center p-1.5 rounded bg-muted/50">
+                  <span className="text-[9px] text-muted-foreground uppercase">Rings</span>
+                  <span className="text-xs font-semibold tabular-nums">{result.descriptors.NumAromaticRings}</span>
+                  <PropertyBadge 
+                    status={result.descriptors.NumAromaticRings <= 3 ? "optimal" : "warning"}
+                    className="text-[8px] px-1 py-0"
+                    showIcon={false}
+                  >
+                    {result.descriptors.NumAromaticRings <= 3 ? "OK" : "High"}
                   </PropertyBadge>
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">H-Bond Acceptors</TableCell>
-                <TableCell className="text-right tabular-nums">{result.lipinski.NumHAcceptors}</TableCell>
-                <TableCell className="text-right">
-                  <PropertyBadge status={getPropertyStatus(result.lipinski.NumHAcceptors, 10)}>
-                    {result.lipinski.NumHAcceptors <= 10 ? "Optimal" : "High"}
+                </div>
+                <div className="flex flex-col items-center p-1.5 rounded bg-muted/50">
+                  <span className="text-[9px] text-muted-foreground uppercase">Heavy</span>
+                  <span className="text-xs font-semibold tabular-nums">{result.descriptors.NumHeavyAtoms}</span>
+                  <PropertyBadge status="info" className="text-[8px] px-1 py-0" showIcon={false}>
+                    Info
                   </PropertyBadge>
-                </TableCell>
-              </TableRow>
-              {result.descriptors && (
-                <>
-                  <TableRow>
-                    <TableCell className="font-medium">TPSA (Polar Surface Area)</TableCell>
-                    <TableCell className="text-right tabular-nums">{result.descriptors.TPSA} Ų</TableCell>
-                    <TableCell className="text-right">
-                      <PropertyBadge status={getPropertyStatus(result.descriptors.TPSA, 140)}>
-                        {result.descriptors.TPSA <= 140 ? "Optimal" : "High"}
-                      </PropertyBadge>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Rotatable Bonds</TableCell>
-                    <TableCell className="text-right tabular-nums">{result.descriptors.NumRotatableBonds}</TableCell>
-                    <TableCell className="text-right">
-                      <PropertyBadge status={getPropertyStatus(result.descriptors.NumRotatableBonds, 10)}>
-                        {result.descriptors.NumRotatableBonds <= 10 ? "Optimal" : "High"}
-                      </PropertyBadge>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Aromatic Rings</TableCell>
-                    <TableCell className="text-right tabular-nums">{result.descriptors.NumAromaticRings}</TableCell>
-                    <TableCell className="text-right">
-                      <PropertyBadge status={getPropertyStatus(result.descriptors.NumAromaticRings, 3)}>
-                        {result.descriptors.NumAromaticRings <= 3 ? "Optimal" : "High"}
-                      </PropertyBadge>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Heavy Atoms</TableCell>
-                    <TableCell className="text-right tabular-nums">{result.descriptors.NumHeavyAtoms}</TableCell>
-                    <TableCell className="text-right">
-                      <PropertyBadge status="info" showIcon={false}>Info</PropertyBadge>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Molecular Formula</TableCell>
-                    <TableCell className="text-right font-mono text-sm">{result.descriptors.MolecularFormula}</TableCell>
-                    <TableCell className="text-right">
-                      <PropertyBadge status="info" showIcon={false}>Info</PropertyBadge>
-                    </TableCell>
-                  </TableRow>
-                </>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
+                </div>
+              </>
+            )}
+          </div>
+        }
+        title={<span className="text-xs">Lipinski Rule of Five & Descriptors</span>}
+        icon={<Beaker className="h-3.5 w-3.5 text-primary" />}
+        description={result.descriptors?.MolecularFormula ? `Formula: ${result.descriptors.MolecularFormula}` : undefined}
+      />
+    </BentoGrid>
   );
 }

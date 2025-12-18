@@ -37,6 +37,12 @@ export interface MoleculeSVGResponse {
     status: string;
 }
 
+export interface NameToSmilesResponse {
+    name: string;
+    smiles: string;
+    status: string;
+}
+
 export interface HealthResponse {
     status: string;
     model_ready: boolean;

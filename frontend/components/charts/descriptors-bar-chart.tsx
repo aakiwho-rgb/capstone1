@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 interface DescriptorsBarChartProps {
   descriptors: ExtendedDescriptors;
   className?: string;
+  compact?: boolean;
 }
 
 // Drug-likeness reference ranges (approximate optimal ranges)
@@ -35,6 +36,7 @@ const DESCRIPTOR_CONFIG = {
 export function DescriptorsBarChart({
   descriptors,
   className = "",
+  compact = false,
 }: DescriptorsBarChartProps) {
   const data = [
     {
@@ -150,22 +152,24 @@ export function DescriptorsBarChart({
 
   return (
     <div className={cn("w-full", className)} role="img" aria-label="Molecular descriptors chart">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="text-sm font-medium text-foreground">
-          Molecular Descriptors
-        </h4>
-        <span className="text-xs text-muted-foreground">
-          Formula:{" "}
-          <span className="font-mono font-medium text-foreground">
-            {descriptors.MolecularFormula}
+      {!compact && (
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-sm font-medium text-foreground">
+            Molecular Descriptors
+          </h4>
+          <span className="text-xs text-muted-foreground">
+            Formula:{" "}
+            <span className="font-mono font-medium text-foreground">
+              {descriptors.MolecularFormula}
+            </span>
           </span>
-        </span>
-      </div>
-      <ResponsiveContainer width="100%" height={220}>
+        </div>
+      )}
+      <ResponsiveContainer width="100%" height={compact ? 100 : 220}>
         <BarChart
-          data={data}
+          data={compact ? data.slice(0, 4) : data}
           layout="vertical"
-          margin={{ top: 5, right: 20, left: 70, bottom: 5 }}
+          margin={compact ? { top: 0, right: 10, left: 50, bottom: 0 } : { top: 5, right: 20, left: 70, bottom: 5 }}
         >
           <CartesianGrid
             strokeDasharray="3 3"
@@ -176,25 +180,26 @@ export function DescriptorsBarChart({
           <XAxis
             type="number"
             domain={[0, 100]}
-            tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+            tick={{ fontSize: compact ? 8 : 10, fill: "hsl(var(--muted-foreground))" }}
             tickFormatter={(value) => `${value}%`}
             axisLine={{ stroke: "hsl(var(--border))" }}
             tickLine={{ stroke: "hsl(var(--border))" }}
+            hide={compact}
           />
           <YAxis
             type="category"
             dataKey="name"
-            tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))", fontWeight: 500 }}
-            width={65}
+            tick={{ fontSize: compact ? 9 : 11, fill: "hsl(var(--muted-foreground))", fontWeight: 500 }}
+            width={compact ? 45 : 65}
             axisLine={false}
             tickLine={false}
           />
           <Tooltip content={<CustomTooltip />} cursor={{ fill: "hsl(var(--muted))", opacity: 0.3 }} />
-          <Bar dataKey="normalizedValue" radius={[0, 4, 4, 0]} maxBarSize={18}>
-            {data.map((entry, index) => (
+          <Bar dataKey="normalizedValue" radius={[0, 4, 4, 0]} maxBarSize={compact ? 14 : 18}>
+            {(compact ? data.slice(0, 4) : data).map((entry, index) => (
               <Cell
                 key={`cell-${index}`}
-                fill={entry.isOptimal ? "#10b981" : "#f59e0b"}
+                fill={entry.isOptimal ? "var(--chart-optimal)" : "var(--chart-warning)"}
                 fillOpacity={0.85}
               />
             ))}

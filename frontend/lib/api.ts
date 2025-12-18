@@ -4,7 +4,8 @@ import {
     TrainingResponse,
     ModelInfoResponse,
     ErrorResponse,
-    MoleculeSVGResponse
+    MoleculeSVGResponse,
+    NameToSmilesResponse
 } from "@/types/api";
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL.length > 0)
@@ -115,5 +116,19 @@ export const api = {
             body: JSON.stringify({ smiles, width, height }),
         });
         return handleResponse<MoleculeSVGResponse>(response);
+    },
+
+    /**
+     * Convert a molecule name to SMILES using PubChem API
+     */
+    nameToSmiles: async (name: string): Promise<NameToSmilesResponse> => {
+        const response = await fetch(`${API_BASE_URL}/molecule/name-to-smiles`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ name }),
+        });
+        return handleResponse<NameToSmilesResponse>(response);
     }
 };
