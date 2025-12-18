@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   BarChart,
   Bar,
@@ -30,6 +31,30 @@ const DESCRIPTOR_CONFIG = {
 };
 
 /**
+ * Custom Tooltip component with theme support
+ */
+function CustomTooltip({ active, payload }: any) {
+  if (!active || !payload || !payload.length) return null;
+  
+  const data = payload[0].payload;
+  
+  return (
+    <div className="bg-popover border border-border rounded-lg shadow-lg p-2 text-popover-foreground">
+      <p className="font-medium text-sm">{data.name}</p>
+      <p className="text-xs text-muted-foreground mt-1">
+        Value: <span className="font-mono font-medium text-foreground">{data.value}{data.unit ? ` ${data.unit}` : ''}</span>
+      </p>
+      <p className={cn(
+        "text-xs mt-0.5",
+        data.isOptimal ? "text-teal-500" : "text-amber-500"
+      )}>
+        {data.isOptimal ? "✓ Within optimal range" : "⚠ Above optimal"}
+      </p>
+    </div>
+  );
+}
+
+/**
  * DescriptorsBarChart - Visualizes extended molecular descriptors
  * Supports dark mode with semantic theming
  */
@@ -38,6 +63,35 @@ export function DescriptorsBarChart({
   className = "",
   compact = false,
 }: DescriptorsBarChartProps) {
+  // Theme detection for Recharts (which doesn't support CSS variables well)
+  const [isDark, setIsDark] = useState(false);
+  
+  useEffect(() => {
+    // Check initial theme
+    const checkTheme = () => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    };
+    checkTheme();
+    
+    // Watch for theme changes
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, { 
+      attributes: true, 
+      attributeFilter: ['class'] 
+    });
+    
+    return () => observer.disconnect();
+  }, []);
+
+  // Theme-aware colors for Recharts
+  const colors = {
+    grid: isDark ? "#374151" : "#e5e7eb",
+    text: isDark ? "#9ca3af" : "#6b7280",
+    optimal: isDark ? "#2dd4bf" : "#14b8a6",  // teal
+    warning: isDark ? "#fbbf24" : "#f59e0b",  // amber
+    cursor: isDark ? "rgba(55, 65, 81, 0.5)" : "rgba(229, 231, 235, 0.5)",
+  };
+
   const data = [
     {
       name: DESCRIPTOR_CONFIG.MW.label,
@@ -145,33 +199,36 @@ export function DescriptorsBarChart({
         >
           <CartesianGrid
             strokeDasharray="3 3"
-            stroke="hsl(var(--border))"
+            stroke={colors.grid}
             horizontal={false}
             strokeOpacity={0.5}
           />
           <XAxis
             type="number"
             domain={[0, 100]}
-            tick={{ fontSize: compact ? 8 : 10, fill: "hsl(var(--muted-foreground))" }}
+            tick={{ fontSize: compact ? 8 : 10, fill: colors.text }}
             tickFormatter={(value) => `${value}%`}
-            axisLine={{ stroke: "hsl(var(--border))" }}
-            tickLine={{ stroke: "hsl(var(--border))" }}
+            axisLine={{ stroke: colors.grid }}
+            tickLine={{ stroke: colors.grid }}
             hide={compact}
           />
           <YAxis
             type="category"
             dataKey="name"
-            tick={{ fontSize: compact ? 9 : 11, fill: "hsl(var(--muted-foreground))", fontWeight: 500 }}
+            tick={{ fontSize: compact ? 9 : 11, fill: colors.text, fontWeight: 500 }}
             width={compact ? 45 : 65}
             axisLine={false}
             tickLine={false}
           />
-          <Tooltip cursor={{ fill: "hsl(var(--muted))", opacity: 0.3 }} />
+          <Tooltip 
+            content={<CustomTooltip />}
+            cursor={{ fill: colors.cursor }}
+          />
           <Bar dataKey="normalizedValue" radius={[0, 4, 4, 0]} maxBarSize={compact ? 14 : 18}>
             {(compact ? data.slice(0, 4) : data).map((entry, index) => (
               <Cell
                 key={`cell-${index}`}
-                fill={entry.isOptimal ? "var(--chart-optimal)" : "var(--chart-warning)"}
+                fill={entry.isOptimal ? colors.optimal : colors.warning}
                 fillOpacity={0.85}
               />
             ))}
