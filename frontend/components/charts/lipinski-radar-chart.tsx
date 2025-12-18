@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   RadarChart,
   PolarGrid,
@@ -36,6 +37,34 @@ export function LipinskiRadarChart({
   className = "",
   compact = false,
 }: LipinskiRadarChartProps) {
+  // Theme detection for Recharts (which doesn't support CSS variables well)
+  const [isDark, setIsDark] = useState(false);
+  
+  useEffect(() => {
+    // Check initial theme
+    const checkTheme = () => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    };
+    checkTheme();
+    
+    // Watch for theme changes
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, { 
+      attributes: true, 
+      attributeFilter: ['class'] 
+    });
+    
+    return () => observer.disconnect();
+  }, []);
+
+  // Theme-aware colors for Recharts
+  const colors = {
+    grid: isDark ? "#374151" : "#e5e7eb",
+    text: isDark ? "#9ca3af" : "#6b7280",
+    primary: isDark ? "#2dd4bf" : "#14b8a6",
+    threshold: isDark ? "#6b7280" : "#9ca3af",
+  };
+
   // Normalize values to percentage of threshold (capped at 150% for visualization)
   const data = [
     {
@@ -140,14 +169,14 @@ export function LipinskiRadarChart({
       <ResponsiveContainer width="100%" height={compact ? 100 : 260}>
         <RadarChart data={data} margin={compact ? { top: 5, right: 20, bottom: 5, left: 20 } : { top: 20, right: 30, bottom: 20, left: 30 }}>
           <PolarGrid 
-            stroke="hsl(var(--border))" 
-            strokeOpacity={0.5}
+            stroke={colors.grid} 
+            strokeOpacity={0.7}
           />
           <PolarAngleAxis
             dataKey="property"
             tick={{ 
               fontSize: compact ? 9 : 12, 
-              fill: "hsl(var(--muted-foreground))",
+              fill: colors.text,
               fontWeight: 500
             }}
           />
@@ -157,7 +186,7 @@ export function LipinskiRadarChart({
               domain={[0, 150]}
               tick={{ 
                 fontSize: 10, 
-                fill: "hsl(var(--muted-foreground))" 
+                fill: colors.text 
               }}
               tickFormatter={(value) => `${value}%`}
               axisLine={false}
@@ -167,19 +196,19 @@ export function LipinskiRadarChart({
           <Radar
             name="Threshold"
             dataKey={() => 100}
-            stroke="hsl(var(--muted-foreground))"
+            stroke={colors.threshold}
             fill="none"
             strokeWidth={compact ? 1 : 2}
             strokeDasharray="5 5"
-            strokeOpacity={0.6}
+            strokeOpacity={0.8}
           />
           {/* Actual values */}
           <Radar
             name="Molecule"
             dataKey="value"
-            stroke="hsl(var(--primary))"
-            fill="hsl(var(--primary))"
-            fillOpacity={0.25}
+            stroke={colors.primary}
+            fill={colors.primary}
+            fillOpacity={0.3}
             strokeWidth={compact ? 1.5 : 2}
           />
           <Tooltip content={<CustomTooltip />} />
@@ -187,7 +216,7 @@ export function LipinskiRadarChart({
             <Legend
               wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }}
               formatter={(value) => (
-                <span className="text-muted-foreground">{value}</span>
+                <span style={{ color: colors.text }}>{value}</span>
               )}
             />
           )}

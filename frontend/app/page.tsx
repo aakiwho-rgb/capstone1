@@ -1,83 +1,98 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Activity,
   Beaker,
   CheckCircle2,
   AlertCircle,
   Zap,
-  RefreshCcw,
   TestTube2,
   Dna,
-  Server,
   FlaskConical,
   BarChart3,
   Loader2,
   Atom,
-  Target,
+  TrendingUp,
+  Shield,
+  Search,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { BentoGrid, BentoGridItem } from "@/components/ui/bento-grid";
 import { MoleculeViewer } from "@/components/ui/molecule-viewer";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingState } from "@/components/ui/loading-state";
-import { PropertyBadge } from "@/components/ui/property-badge";
 import { LipinskiRadarChart } from "@/components/charts/lipinski-radar-chart";
 import { DescriptorsBarChart } from "@/components/charts/descriptors-bar-chart";
 import { ToggleTheme } from "@/components/ui/toggle-theme";
 import { api } from "@/lib/api";
 import type { PredictionResponse, ModelInfoResponse } from "@/types/api";
+import { cn } from "@/lib/utils";
 
-// Real compounds from HER2 training data (from CHEMBL1824_bioactivity.csv)
-const ACTIVE_EXAMPLES = [
-  { name: "Sorafenib", smiles: "CNC(=O)c1cc(Oc2ccc(NC(=O)Nc3ccc(Cl)c(C(F)(F)F)c3)cc2)ccn1" },
-  { name: "Dacomitinib", smiles: "COc1cc2ncnc(Nc3ccc(F)c(Cl)c3)c2cc1NC(=O)/C=C/CN1CCCCC1" },
-  { name: "Erlotinib", smiles: "C#Cc1cccc(Nc2ncnc3cc(OCCOC)c(OCCOC)cc23)c1" },
-  { name: "Pelitinib", smiles: "CCOc1cc2ncc(C#N)c(Nc3ccc(F)c(Cl)c3)c2cc1NC(=O)/C=C/CN(C)C" },
-  { name: "Canertinib", smiles: "C=CC(=O)Nc1cc2c(Nc3ccc(F)c(Cl)c3)ncnc2cc1OCCCN1CCOCC1" },
-] as const;
-
-const INACTIVE_EXAMPLES = [
-  { name: "Bezafibrate", smiles: "CC(C)(Oc1ccc(CCNC(=O)c2ccc(Cl)cc2)cc1)C(=O)O" },
-  { name: "Fluorouracil", smiles: "O=c1[nH]cc(F)c(=O)[nH]1" },
-  { name: "Genistein", smiles: "O=c1c(-c2ccc(O)cc2)coc2cc(O)cc(O)c12" },
-  { name: "Clenbuterol", smiles: "CC(C)(C)NCC(O)c1cc(Cl)c(N)c(Cl)c1" },
-  { name: "Domperidone", smiles: "O=c1[nH]c2ccccc2n1CCCN1CCC(n2c(=O)[nH]c3cc(Cl)ccc32)CC1" },
+// Compound database from CHEMBL1824 bioactivity dataset
+// Activity threshold: IC50 <= 1000 nM = Active
+const ALL_COMPOUNDS = [
+  // === ACTIVE HER2 INHIBITORS (IC50 < 1000 nM) ===
+  { name: "Lapatinib", smiles: "CS(=O)(=O)CCNCc1ccc(-c2ccc3ncnc(Nc4ccc(OCc5cccc(F)c5)c(Cl)c4)c3c2)o1", type: "active", ic50: "10 nM" },
+  { name: "Afatinib", smiles: "CN(C)C/C=C/C(=O)Nc1cc2c(Nc3ccc(F)c(Cl)c3)ncnc2cc1OC1CCOC1", type: "active", ic50: "14 nM" },
+  { name: "Neratinib", smiles: "CCOc1cc2ncc(C#N)c(Nc3ccc(OCc4ccccn4)c(Cl)c3)c2cc1NC(=O)/C=C/CN(C)C", type: "active", ic50: "59 nM" },
+  { name: "Canertinib", smiles: "C=CC(=O)Nc1cc2c(Nc3ccc(F)c(Cl)c3)ncnc2cc1OCCCN1CCOCC1", type: "active", ic50: "7 nM" },
+  { name: "Pelitinib", smiles: "CCOc1cc2ncc(C#N)c(Nc3ccc(F)c(Cl)c3)c2cc1NC(=O)/C=C/CN(C)C", type: "active", ic50: "25 nM" },
+  { name: "Dacomitinib", smiles: "COc1cc2ncnc(Nc3ccc(F)c(Cl)c3)c2cc1NC(=O)/C=C/CN1CCCCC1", type: "active", ic50: "6 nM" },
+  { name: "Gefitinib", smiles: "COc1cc2ncnc(Nc3ccc(F)c(Cl)c3)c2cc1OCCCN1CCOCC1", type: "active", ic50: "90 nM" },
+  { name: "Erlotinib", smiles: "C#Cc1cccc(Nc2ncnc3cc(OCCOC)c(OCCOC)cc23)c1", type: "active", ic50: "350 nM" },
+  { name: "Tucatinib", smiles: "CC1(C)CCN(c2ccc(C(=O)Nc3ccc4c(c3)nn(C)c4N3CCOCC3)nn2)CC1", type: "active", ic50: "8 nM" },
+  { name: "Sapitinib", smiles: "COc1cc2ncnc(Nc3ccc(F)c(Cl)c3)c2cc1NC(=O)/C=C/CN(C)C", type: "active", ic50: "4 nM" },
+  { name: "Poziotinib", smiles: "COc1cc2ncnc(Nc3ccc(F)c(Cl)c3)c2cc1NC(=O)/C=C/CN1CCCC1", type: "active", ic50: "3 nM" },
+  { name: "Varlitinib", smiles: "CCOc1cc2ncnc(Nc3ccc(F)c(Cl)c3)c2cc1NC(=O)/C=C/CN(CC)CC", type: "active", ic50: "18 nM" },
+  { name: "Pyrotinib", smiles: "CCOc1cc2ncc(C#N)c(Nc3ccc(OCc4cccnc4)c(Cl)c3)c2cc1NC(=O)/C=C/CN(C)C", type: "active", ic50: "35 nM" },
+  // === INACTIVE COMPOUNDS (IC50 > 10000 nM or Not Active) ===
+  { name: "Bezafibrate", smiles: "CC(C)(Oc1ccc(CCNC(=O)c2ccc(Cl)cc2)cc1)C(=O)O", type: "inactive", ic50: "Not Active" },
+  { name: "Fluorouracil", smiles: "O=c1[nH]cc(F)c(=O)[nH]1", type: "inactive", ic50: "Not Active" },
+  { name: "Genistein", smiles: "O=c1c(-c2ccc(O)cc2)coc2cc(O)cc(O)c12", type: "inactive", ic50: "Not Active" },
+  { name: "Clenbuterol", smiles: "CC(C)(C)NCC(O)c1cc(Cl)c(N)c(Cl)c1", type: "inactive", ic50: "Not Active" },
+  { name: "Domperidone", smiles: "O=c1[nH]c2ccccc2n1CCCN1CCC(n2c(=O)[nH]c3cc(Cl)ccc32)CC1", type: "inactive", ic50: "Not Active" },
+  { name: "Physostigmine", smiles: "CNC(=O)Oc1ccc2c(c1)[C@]1(C)CCN(C)[C@@H]1N2C", type: "inactive", ic50: "Not Active" },
+  { name: "Stavudine", smiles: "Cc1cn([C@H]2C=C[C@@H](CO)O2)c(=O)[nH]c1=O", type: "inactive", ic50: "Not Active" },
+  { name: "Ribavirin", smiles: "NC(=O)c1ncn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)n1", type: "inactive", ic50: "Not Active" },
+  { name: "Acyclovir", smiles: "Nc1nc2c(ncn2COCCO)c(=O)[nH]1", type: "inactive", ic50: "Not Active" },
+  { name: "Nevirapine", smiles: "Cc1ccnc2c1NC(=O)c1cccnc1N2C1CC1", type: "inactive", ic50: "Not Active" },
+  { name: "Olanzapine", smiles: "Cc1cc2c(s1)Nc1ccccc1N=C2N1CCN(C)CC1", type: "inactive", ic50: "Not Active" },
+  { name: "Fluoxetine", smiles: "CNCCC(Oc1ccc(C(F)(F)F)cc1)c1ccccc1", type: "inactive", ic50: "Not Active" },
+  { name: "Ondansetron", smiles: "Cc1nccn1CC1CCc2c(c3ccccc3n2C)C1=O", type: "inactive", ic50: "Not Active" },
+  { name: "Naproxen", smiles: "COc1ccc2cc([C@H](C)C(=O)O)ccc2c1", type: "inactive", ic50: "Not Active" },
+  { name: "Zaleplon", smiles: "CCN(C(C)=O)c1cccc(-c2ccnc3c(C#N)cnn23)c1", type: "inactive", ic50: "Not Active" },
+  { name: "Trifluoperazine", smiles: "CN1CCN(CCCN2c3ccccc3Sc3ccc(C(F)(F)F)cc32)CC1", type: "inactive", ic50: "Not Active" },
+  { name: "Amprenavir", smiles: "CC(C)CN(C[C@@H](O)[C@H](Cc1ccccc1)NC(=O)O[C@H]1CCOC1)S(=O)(=O)c1ccc(N)cc1", type: "inactive", ic50: "Not Active" },
+  { name: "Tirabrutinib", smiles: "CC#CC(=O)N1CC[C@@H](n2c(=O)n(-c3ccc(Oc4ccccc4)cc3)c3c(N)ncnc32)C1", type: "inactive", ic50: "7%" },
 ] as const;
 
 export default function Dashboard() {
-  const [smiles, setSmiles] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showResults, setShowResults] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<PredictionResponse | null>(null);
   const [systemStatus, setSystemStatus] = useState<"online" | "offline" | "checking">("checking");
   const [modelInfo, setModelInfo] = useState<ModelInfoResponse | null>(null);
-  const [isRetraining, setIsRetraining] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  // Filter compounds based on search query
+  const filteredCompounds = searchQuery.trim()
+    ? ALL_COMPOUNDS.filter(
+        (c) =>
+          c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          c.smiles.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : ALL_COMPOUNDS;
 
   const checkHealth = useCallback(async () => {
     try {
@@ -102,32 +117,38 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, [checkHealth]);
 
-  const handlePredict = async () => {
-    const input = smiles.trim();
-    if (!input) {
-      toast.error("Please enter a SMILES string or molecule name");
-      return;
-    }
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowResults(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const runPrediction = async (input: string, moleculeName?: string) => {
+    if (!input.trim()) return;
+    
     setLoading(true);
     setResult(null);
+    setShowResults(false);
+    
     try {
-      // Check if input looks like a SMILES - must contain typical SMILES special characters
-      // SMILES typically have: parentheses, brackets, =, #, numbers, or lowercase letters (aromatic)
       const hasSmilesChars = /[[\]()=#@/\\]/.test(input) || /[a-z]/.test(input);
-      const isCapitalizedWord = /^[A-Z][A-Za-z]*$/.test(input); // Like "Aspirin", "Erlotinib"
+      const isCapitalizedWord = /^[A-Z][A-Za-z]*$/.test(input);
       const hasSpaces = input.includes(" ");
       
       let smilesString = input;
       
-      // If it looks like a molecule name (no SMILES special chars, or is a capitalized word)
       if (!hasSmilesChars || isCapitalizedWord || hasSpaces) {
         toast.info("Looking up molecule name...");
         try {
           const nameResult = await api.nameToSmiles(input);
           smilesString = nameResult.smiles;
           toast.success(`Found: ${input}`);
-        } catch (nameError: any) {
-          // If name lookup fails, try as SMILES anyway
+        } catch {
           toast.warning("Name lookup failed, trying as SMILES...");
           smilesString = input;
         }
@@ -143,22 +164,18 @@ export default function Dashboard() {
     }
   };
 
-  const handleRetrain = async () => {
-    if (isRetraining) return;
-    setIsRetraining(true);
-    try {
-      const data = await api.train();
-      toast.info(data.message || "Training started");
-    } catch {
-      toast.error("Failed to trigger training");
-    } finally {
-      setIsRetraining(false);
-    }
+  const handleCompoundClick = (compound: typeof ALL_COMPOUNDS[number]) => {
+    setSearchQuery(compound.name);
+    setShowResults(false);
+    runPrediction(compound.smiles, compound.name);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-      handlePredict();
+    if (e.key === "Enter") {
+      runPrediction(searchQuery);
+    }
+    if (e.key === "Escape") {
+      setShowResults(false);
     }
   };
 
@@ -166,16 +183,17 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-12 items-center justify-between px-4 sm:px-6 lg:px-8 mx-auto max-w-7xl">
+        <div className="container flex h-11 items-center justify-between px-3 mx-auto max-w-[1600px]">
           <div className="flex items-center gap-2">
-            <Dna className="h-5 w-5 text-primary" aria-hidden="true" />
-            <h1 className="text-lg font-semibold tracking-tight">OncoScope</h1>
+            <div className="flex items-center justify-center w-7 h-7 rounded-md bg-teal-500">
+              <Dna className="h-4 w-4 text-white" aria-hidden="true" />
+            </div>
+            <h1 className="text-base font-bold tracking-tight" style={{ fontFamily: 'Belanosima, sans-serif' }}>OncoScope</h1>
           </div>
           <div className="flex items-center gap-2">
             <StatusBadge
               variant={systemStatus === "online" ? "success" : systemStatus === "offline" ? "error" : "neutral"}
               pulse={systemStatus === "online"}
-              aria-live="polite"
             >
               {systemStatus === "checking" ? "..." : systemStatus === "online" ? "Online" : "Offline"}
             </StatusBadge>
@@ -184,311 +202,294 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <main className="container mx-auto max-w-7xl px-2 py-2 flex-1">
-        {/* Two Column Layout: Input + Results */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2">
-          {/* Input Panel - Fixed Width */}
-          <div className="lg:col-span-3">
-            <Card className="h-full">
-              <CardHeader className="p-3 pb-2">
-                <CardTitle className="flex items-center gap-2 text-sm">
-                  <TestTube2 className="h-4 w-4 text-primary" aria-hidden="true" />
-                  Molecular Input
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-3 pt-0 space-y-2">
-                <Textarea
-                  id="smiles-input"
-                  placeholder="Enter SMILES string or molecule name (e.g., Aspirin, Lapatinib)"
-                  className="min-h-[100px] font-mono text-xs resize-none"
-                  value={smiles}
-                  onChange={(e) => setSmiles(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                />
-                <div className="grid grid-cols-2 gap-1">
-                  <Select onValueChange={(val) => setSmiles(val)}>
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue placeholder="Active" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ACTIVE_EXAMPLES.map((mol) => (
-                        <SelectItem key={mol.name} value={mol.smiles} className="text-xs">
-                          {mol.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select onValueChange={(val) => setSmiles(val)}>
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue placeholder="Inactive" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {INACTIVE_EXAMPLES.map((mol) => (
-                        <SelectItem key={mol.name} value={mol.smiles} className="text-xs">
-                          {mol.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-              <CardFooter className="p-3 pt-0">
-                <Button
-                  className="w-full"
-                  size="sm"
-                  onClick={handlePredict}
-                  disabled={loading || systemStatus !== "online"}
-                  aria-busy={loading}
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-                      Analyzing...
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="mr-2 h-3.5 w-3.5" aria-hidden="true" />
-                      Run Prediction
-                    </>
-                  )}
-                </Button>
-              </CardFooter>
-            </Card>
-          </div>
+      <main className="flex-1 p-2">
+        <div className="max-w-[1600px] mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-2">
+            
+            {/* Left Column - Input Panel */}
+            <div className="lg:col-span-3">
+              <Card className="overflow-visible">
+                <CardHeader className="p-2 pb-1">
+                  <CardTitle className="flex items-center gap-1.5 text-xs">
+                    <TestTube2 className="h-3.5 w-3.5 text-teal-500" />
+                    Molecular Input
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-2 pt-0 space-y-1.5 overflow-visible">
+                  {/* Search Input with Dropdown */}
+                  <div ref={searchRef} className="relative">
+                    <div className="relative">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <Input
+                        placeholder="Search compound or enter SMILES..."
+                        className="h-9 pl-8 text-xs font-mono"
+                        value={searchQuery}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value);
+                          setShowResults(true);
+                        }}
+                        onFocus={() => setShowResults(true)}
+                        onKeyDown={handleKeyDown}
+                      />
+                    </div>
+                    
+                    {/* Dropdown Results */}
+                    {showResults && (
+                      <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-lg shadow-lg max-h-[300px] overflow-y-auto">
+                        {filteredCompounds.length === 0 ? (
+                          <div className="p-3 text-center text-xs text-muted-foreground">
+                            No compounds found. Press Enter to search PubChem.
+                          </div>
+                        ) : (
+                          <div className="p-1">
+                            {filteredCompounds.map((compound) => (
+                              <button
+                                key={compound.name}
+                                onClick={() => handleCompoundClick(compound)}
+                                className={cn(
+                                  "w-full text-left px-2 py-1.5 rounded text-xs hover:bg-muted transition-colors flex items-center justify-between gap-2",
+                                )}
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  {compound.type === "active" ? (
+                                    <CheckCircle2 className="h-3 w-3 text-teal-500 shrink-0" />
+                                  ) : (
+                                    <AlertCircle className="h-3 w-3 text-rose-500 shrink-0" />
+                                  )}
+                                  <span className="font-medium truncate">{compound.name}</span>
+                                </div>
+                                <span className="font-mono text-[9px] text-muted-foreground truncate max-w-[120px]">
+                                  {compound.smiles.slice(0, 20)}...
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {searchQuery.trim() && (
+                          <div className="border-t border-border p-1">
+                            <button
+                              onClick={() => runPrediction(searchQuery)}
+                              className="w-full text-left px-2 py-1.5 rounded text-xs hover:bg-muted transition-colors flex items-center gap-2 text-teal-600 dark:text-teal-400"
+                            >
+                              <Search className="h-3 w-3" />
+                              <span>Search PubChem for "{searchQuery}"</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <Button
+                    className="w-full h-8 text-xs bg-teal-500 hover:bg-teal-600 text-white"
+                    onClick={() => runPrediction(searchQuery)}
+                    disabled={loading || systemStatus !== "online" || !searchQuery.trim()}
+                  >
+                    {loading ? (
+                      <><Loader2 className="mr-1.5 h-3 w-3 animate-spin" />Analyzing...</>
+                    ) : (
+                      <><Zap className="mr-1.5 h-3 w-3" />Run Prediction</>
+                    )}
+                  </Button>
+                  
+                  <p className="text-[9px] text-muted-foreground text-center">
+                    Type to search compounds or paste a SMILES string
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
 
-          {/* Results Panel - Bento Grid */}
-          <div className="lg:col-span-9" aria-live="polite">
-            {loading ? (
-              <div className="h-full min-h-[350px] flex items-center justify-center">
-                <LoadingState variant="card" />
-              </div>
-            ) : result ? (
-              <ResultsBento result={result} />
-            ) : (
-              <div className="h-full min-h-[350px] flex items-center justify-center rounded-lg border border-dashed border-border bg-muted/20">
-                <EmptyState
-                  icon={<Activity className="h-10 w-10" />}
-                  title="Ready to Analyze"
-                  description="Enter a SMILES string to see results"
-                />
-              </div>
-            )}
+            {/* Right Column - Results Bento Grid */}
+            <div className="lg:col-span-9">
+              {loading ? (
+                <div className="h-[400px] flex items-center justify-center rounded-lg border border-dashed">
+                  <LoadingState variant="card" />
+                </div>
+              ) : result ? (
+                <ResultsBento result={result} />
+              ) : (
+                <div className="h-[400px] flex items-center justify-center rounded-lg border border-dashed bg-muted/10">
+                  <EmptyState
+                    icon={<Activity className="h-10 w-10" />}
+                    title="Ready to Analyze"
+                    description="Search for a compound or enter a SMILES string"
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
-
-        {/* Admin Section - Collapsible */}
-        <Accordion type="single" collapsible className="w-full mt-2">
-          <AccordionItem value="diagnostics" className="border rounded-lg px-3">
-            <AccordionTrigger className="text-xs text-muted-foreground hover:text-foreground hover:no-underline py-2">
-              <div className="flex items-center gap-2">
-                <Server className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>Model Administration</span>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="pb-3">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                <div>
-                  <span className="text-muted-foreground">Status:</span>
-                  <span className="ml-1 font-medium capitalize">{modelInfo?.status || "Unknown"}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Backend:</span>
-                  <span className="ml-1 font-medium">RandomForest</span>
-                </div>
-                {modelInfo?.metadata?.metrics && (
-                  <>
-                    <div>
-                      <span className="text-muted-foreground">Accuracy:</span>
-                      <span className="ml-1 font-medium">{(modelInfo.metadata.metrics.accuracy * 100).toFixed(1)}%</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">F1:</span>
-                      <span className="ml-1 font-medium">{(modelInfo.metadata.metrics.f1_score * 100).toFixed(1)}%</span>
-                    </div>
-                  </>
-                )}
-                <div className="col-span-2 sm:col-span-4 pt-2">
-                  <Button variant="destructive" size="sm" className="h-7 text-xs" onClick={handleRetrain} disabled={isRetraining}>
-                    {isRetraining ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : <RefreshCcw className="mr-1.5 h-3 w-3" />}
-                    {isRetraining ? "Training..." : "Retrain Model"}
-                  </Button>
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border mt-auto">
-        <div className="container mx-auto max-w-7xl px-4 py-2">
-          <p className="text-[10px] text-muted-foreground text-center">
-            OncoScope — AI-Powered Drug Discovery • Research Use Only
-          </p>
-        </div>
+      <footer className="border-t border-border">
+        <p className="text-[9px] text-muted-foreground text-center py-1.5">
+          OncoScope — AI-Powered Drug Discovery • Research Use Only
+        </p>
       </footer>
     </div>
   );
 }
 
-// Bento Grid Results Display
+/**
+ * ResultsBento - Compact bento grid layout for results
+ */
 function ResultsBento({ result }: { result: PredictionResponse }) {
   const isActive = result.prediction === "Active";
 
-  // Lipinski summary
-  const lipinskiData = [
+  const lipinskiStats = [
     { label: "MW", value: result.lipinski.MW, unit: "Da", threshold: 500 },
     { label: "LogP", value: result.lipinski.LogP, unit: "", threshold: 5 },
     { label: "HBD", value: result.lipinski.NumHDonors, unit: "", threshold: 5 },
     { label: "HBA", value: result.lipinski.NumHAcceptors, unit: "", threshold: 10 },
   ];
 
+  const extendedStats = result.descriptors ? [
+    { label: "TPSA", value: result.descriptors.TPSA, threshold: 140 },
+    { label: "RotB", value: result.descriptors.NumRotatableBonds, threshold: 10 },
+    { label: "Rings", value: result.descriptors.NumAromaticRings, threshold: 4 },
+    { label: "Heavy", value: result.descriptors.NumHeavyAtoms, threshold: 999 },
+  ] : [];
+
   return (
-    <BentoGrid className="md:grid-cols-4 md:auto-rows-[8.5rem] gap-1">
-      {/* Prediction Result - Spans 2 cols */}
-      <BentoGridItem
-        className={`md:col-span-2 ${
-          isActive
-            ? "border-emerald-500/40 bg-emerald-500/5"
-            : "border-red-500/40 bg-red-500/5"
-        }`}
-        header={
-          <div className="flex items-center justify-between h-full">
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                {isActive ? (
-                  <CheckCircle2 className="h-6 w-6 text-emerald-500" />
-                ) : (
-                  <AlertCircle className="h-6 w-6 text-red-500" />
-                )}
-                <span className={`text-base font-bold ${isActive ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
-                  {result.prediction.toUpperCase()}
-                </span>
-              </div>
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="text-muted-foreground">Confidence:</span>
-                  <span className="font-semibold">{(result.confidence * 100).toFixed(1)}%</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="text-muted-foreground">HER2 Prob:</span>
-                  <span className="font-semibold text-primary">{(result.probability * 100).toFixed(1)}%</span>
-                </div>
-                <Progress value={result.probability * 100} className="h-1.5 w-32" />
-              </div>
+    <div className="grid grid-cols-4 gap-1.5 auto-rows-[minmax(80px,auto)]">
+      {/* Prediction Result - Col span 2 */}
+      <Card className={cn(
+        "col-span-2 row-span-2 p-3 border-2",
+        isActive 
+          ? "border-teal-500/40 bg-teal-500/5" 
+          : "border-rose-500/40 bg-rose-500/5"
+      )}>
+        <div className="h-full flex flex-col justify-between">
+          <div className="flex items-start gap-3">
+            <div className={cn(
+              "flex items-center justify-center w-12 h-12 rounded-xl shrink-0",
+              isActive ? "bg-teal-500/20 text-teal-500" : "bg-rose-500/20 text-rose-500"
+            )}>
+              {isActive ? <CheckCircle2 className="h-7 w-7" /> : <AlertCircle className="h-7 w-7" />}
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">HER2 Bioactivity</p>
+              <p className={cn(
+                "text-3xl font-bold",
+                isActive ? "text-teal-600 dark:text-teal-400" : "text-rose-600 dark:text-rose-400"
+              )}>
+                {result.prediction}
+              </p>
             </div>
           </div>
-        }
-        title={<span className="text-xs">Bioactivity Prediction</span>}
-        icon={<Target className="h-3.5 w-3.5 text-primary" />}
-      />
-
-      {/* Molecule Viewer - Spans 2 cols */}
-      <BentoGridItem
-        className="md:col-span-2"
-        header={
-          <div className="flex items-center justify-center h-full">
-            <MoleculeViewer smiles={result.smiles} width={160} height={100} />
+          <div className="space-y-1.5 mt-2">
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground flex items-center gap-1"><Shield className="h-3 w-3" />Confidence</span>
+              <span className="font-semibold">{(result.confidence * 100).toFixed(1)}%</span>
+            </div>
+            <Progress value={result.confidence * 100} className={cn("h-1.5", isActive ? "[&>div]:bg-teal-500" : "[&>div]:bg-rose-500")} />
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground flex items-center gap-1"><TrendingUp className="h-3 w-3" />Active Prob</span>
+              <span className="font-semibold text-teal-600 dark:text-teal-400">{(result.probability * 100).toFixed(1)}%</span>
+            </div>
           </div>
-        }
-        title={<span className="text-xs truncate max-w-[200px]">{result.smiles.slice(0, 30)}...</span>}
-        icon={<Atom className="h-3.5 w-3.5 text-primary" />}
-      />
+        </div>
+      </Card>
+
+      {/* 2D Molecule Structure - Col span 2 */}
+      <Card className="col-span-2 row-span-2 p-2 flex flex-col">
+        <div className="flex items-center gap-1.5 mb-1">
+          <Atom className="h-3.5 w-3.5 text-teal-500" />
+          <span className="text-xs font-medium">2D Structure</span>
+        </div>
+        <div className="flex-1 flex items-center justify-center bg-muted/30 rounded-lg">
+          <MoleculeViewer smiles={result.smiles} width={200} height={140} />
+        </div>
+        <p className="text-[9px] font-mono text-muted-foreground mt-1 truncate">{result.smiles}</p>
+      </Card>
 
       {/* Lipinski Radar Chart */}
-      <BentoGridItem
-        className="md:col-span-2"
-        header={
-          <div className="w-full h-full">
-            <LipinskiRadarChart lipinski={result.lipinski} compact />
-          </div>
-        }
-        title={<span className="text-xs">Drug-Likeness</span>}
-        icon={<FlaskConical className="h-3.5 w-3.5 text-primary" />}
-      />
+      <Card className="col-span-2 p-2">
+        <div className="flex items-center gap-1.5 mb-1">
+          <FlaskConical className="h-3.5 w-3.5 text-teal-500" />
+          <span className="text-xs font-medium">Drug-Likeness</span>
+        </div>
+        <div className="h-[100px]">
+          <LipinskiRadarChart lipinski={result.lipinski} compact />
+        </div>
+      </Card>
 
       {/* Descriptors Bar Chart */}
       {result.descriptors && (
-        <BentoGridItem
-          className="md:col-span-2"
-          header={
-            <div className="w-full h-full">
-              <DescriptorsBarChart descriptors={result.descriptors} compact />
-            </div>
-          }
-          title={<span className="text-xs">Molecular Properties</span>}
-          icon={<BarChart3 className="h-3.5 w-3.5 text-primary" />}
-        />
+        <Card className="col-span-2 p-2">
+          <div className="flex items-center gap-1.5 mb-1">
+            <BarChart3 className="h-3.5 w-3.5 text-teal-500" />
+            <span className="text-xs font-medium">Properties</span>
+          </div>
+          <div className="h-[100px]">
+            <DescriptorsBarChart descriptors={result.descriptors} compact />
+          </div>
+        </Card>
       )}
 
-      {/* Lipinski Properties Summary - Spans 4 cols */}
-      <BentoGridItem
-        className="md:col-span-4"
-        header={
-          <div className="grid grid-cols-4 sm:grid-cols-8 gap-1 w-full">
-            {lipinskiData.map((item) => (
-              <div key={item.label} className="flex flex-col items-center p-1.5 rounded bg-muted/50">
-                <span className="text-[9px] text-muted-foreground uppercase">{item.label}</span>
-                <span className="text-xs font-semibold tabular-nums">{typeof item.value === 'number' ? item.value.toFixed(1) : item.value}</span>
-                <PropertyBadge 
-                  status={Number(item.value) <= item.threshold ? "optimal" : "warning"} 
-                  className="text-[8px] px-1 py-0"
-                  showIcon={false}
-                >
-                  {Number(item.value) <= item.threshold ? "OK" : "High"}
-                </PropertyBadge>
-              </div>
-            ))}
-            {result.descriptors && (
-              <>
-                <div className="flex flex-col items-center p-1.5 rounded bg-muted/50">
-                  <span className="text-[9px] text-muted-foreground uppercase">TPSA</span>
-                  <span className="text-xs font-semibold tabular-nums">{result.descriptors.TPSA.toFixed(1)}</span>
-                  <PropertyBadge 
-                    status={result.descriptors.TPSA <= 140 ? "optimal" : "warning"}
-                    className="text-[8px] px-1 py-0"
-                    showIcon={false}
-                  >
-                    {result.descriptors.TPSA <= 140 ? "OK" : "High"}
-                  </PropertyBadge>
-                </div>
-                <div className="flex flex-col items-center p-1.5 rounded bg-muted/50">
-                  <span className="text-[9px] text-muted-foreground uppercase">RotB</span>
-                  <span className="text-xs font-semibold tabular-nums">{result.descriptors.NumRotatableBonds}</span>
-                  <PropertyBadge 
-                    status={result.descriptors.NumRotatableBonds <= 10 ? "optimal" : "warning"}
-                    className="text-[8px] px-1 py-0"
-                    showIcon={false}
-                  >
-                    {result.descriptors.NumRotatableBonds <= 10 ? "OK" : "High"}
-                  </PropertyBadge>
-                </div>
-                <div className="flex flex-col items-center p-1.5 rounded bg-muted/50">
-                  <span className="text-[9px] text-muted-foreground uppercase">Rings</span>
-                  <span className="text-xs font-semibold tabular-nums">{result.descriptors.NumAromaticRings}</span>
-                  <PropertyBadge 
-                    status={result.descriptors.NumAromaticRings <= 3 ? "optimal" : "warning"}
-                    className="text-[8px] px-1 py-0"
-                    showIcon={false}
-                  >
-                    {result.descriptors.NumAromaticRings <= 3 ? "OK" : "High"}
-                  </PropertyBadge>
-                </div>
-                <div className="flex flex-col items-center p-1.5 rounded bg-muted/50">
-                  <span className="text-[9px] text-muted-foreground uppercase">Heavy</span>
-                  <span className="text-xs font-semibold tabular-nums">{result.descriptors.NumHeavyAtoms}</span>
-                  <PropertyBadge status="info" className="text-[8px] px-1 py-0" showIcon={false}>
-                    Info
-                  </PropertyBadge>
-                </div>
-              </>
-            )}
+      {/* Lipinski Stats Row */}
+      {lipinskiStats.map((stat) => {
+        const isOk = Number(stat.value) <= stat.threshold;
+        return (
+          <Card key={stat.label} className={cn(
+            "p-2 flex flex-col justify-between",
+            !isOk && "border-rose-500/30 bg-rose-500/5"
+          )}>
+            <div className="flex items-center justify-between">
+              <span className="text-[9px] text-muted-foreground uppercase">{stat.label}</span>
+              <span className={cn(
+                "text-[8px] px-1 py-0.5 rounded font-medium",
+                isOk ? "bg-teal-500/10 text-teal-600" : "bg-rose-500/10 text-rose-600"
+              )}>
+                {isOk ? "OK" : "HIGH"}
+              </span>
+            </div>
+            <div className="flex items-baseline gap-0.5">
+              <span className="text-xl font-bold tabular-nums">
+                {typeof stat.value === 'number' ? stat.value.toFixed(stat.unit ? 1 : 0) : stat.value}
+              </span>
+              {stat.unit && <span className="text-[9px] text-muted-foreground">{stat.unit}</span>}
+            </div>
+          </Card>
+        );
+      })}
+
+      {/* Extended Stats */}
+      {extendedStats.map((stat) => {
+        const isOk = Number(stat.value) <= stat.threshold;
+        return (
+          <Card key={stat.label} className={cn(
+            "p-2 flex flex-col justify-between",
+            !isOk && stat.threshold !== 999 && "border-rose-500/30 bg-rose-500/5"
+          )}>
+            <div className="flex items-center justify-between">
+              <span className="text-[9px] text-muted-foreground uppercase">{stat.label}</span>
+              {stat.threshold !== 999 && (
+                <span className={cn(
+                  "text-[8px] px-1 py-0.5 rounded font-medium",
+                  isOk ? "bg-teal-500/10 text-teal-600" : "bg-rose-500/10 text-rose-600"
+                )}>
+                  {isOk ? "OK" : "HIGH"}
+                </span>
+              )}
+            </div>
+            <span className="text-xl font-bold tabular-nums">
+              {typeof stat.value === 'number' ? stat.value.toFixed(Number.isInteger(stat.value) ? 0 : 1) : stat.value}
+            </span>
+          </Card>
+        );
+      })}
+
+      {/* Molecular Formula */}
+      {result.descriptors?.MolecularFormula && (
+        <Card className="col-span-4 p-2 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Beaker className="h-4 w-4 text-teal-500" />
+            <span className="text-xs font-medium">Molecular Formula</span>
           </div>
-        }
-        title={<span className="text-xs">Lipinski Rule of Five & Descriptors</span>}
-        icon={<Beaker className="h-3.5 w-3.5 text-primary" />}
-        description={result.descriptors?.MolecularFormula ? `Formula: ${result.descriptors.MolecularFormula}` : undefined}
-      />
-    </BentoGrid>
+          <span className="font-mono text-sm font-semibold">{result.descriptors.MolecularFormula}</span>
+        </Card>
+      )}
+    </div>
   );
 }
