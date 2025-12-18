@@ -20,6 +20,24 @@ export interface ExtendedDescriptors {
     MolecularFormula: string;
 }
 
+export interface ADMETDescriptors {
+    CacoPermeability: string;
+    HumanIntestinalAbsorption: string;
+    BBBPermeant: string;
+    PlasmaProteinBinding: string;
+    hERG_Inhibition: string;
+}
+
+export interface DrugLikenessScores {
+    qed: number;  // Quantitative Estimate of Drug-likeness (0-1)
+    qed_category: "Excellent" | "Good" | "Moderate" | "Poor";
+    lipinski_violations: number;  // 0-4
+    lipinski_compliant: boolean;
+    veber_compliant: boolean;
+    pains_alerts: string[];  // List of PAINS filter matches
+    pains_count: number;
+}
+
 export interface PredictionResponse {
     smiles: string;
     prediction: "Active" | "Inactive";
@@ -27,6 +45,8 @@ export interface PredictionResponse {
     probability: number;
     lipinski: LipinskiStats;
     descriptors?: ExtendedDescriptors;
+    admet?: ADMETDescriptors;
+    drug_likeness?: DrugLikenessScores;
     status: string;
     timestamp: string;
 }
@@ -35,6 +55,16 @@ export interface MoleculeSVGResponse {
     smiles: string;
     svg: string;
     status: string;
+}
+
+export interface MoleculeImageExportResponse {
+    smiles: string;
+    format: "svg" | "png";
+    content: string;  // base64 encoded
+    filename: string;
+    mime_type: string;
+    width: number;
+    height: number;
 }
 
 export interface NameToSmilesResponse {
@@ -91,4 +121,75 @@ export interface ModelInfoResponse {
         activity_threshold_nm: number;
         confidence_threshold: number;
     };
+}
+
+export interface SimilarCompound {
+    smiles: string;
+    chembl_id: string;
+    activity: "Active" | "Inactive";
+    similarity: number;
+    ic50_nm: number | null;
+}
+
+export interface SimilaritySearchResponse {
+    query_smiles: string;
+    results: SimilarCompound[];
+    count: number;
+}
+
+export interface CalibrationData {
+    predicted_probabilities: number[];
+    true_probabilities: number[];
+}
+
+export interface FeatureImportance {
+    indices: number[];
+    importances: number[];
+    top_k: number;
+}
+
+export interface DatasetStats {
+    total_samples: number;
+    active_count: number;
+    inactive_count: number;
+    ic50_distribution: {
+        min: number;
+        max: number;
+        median: number;
+        mean: number;
+        q25: number;
+        q75: number;
+    };
+    mw_stats: {
+        min: number;
+        max: number;
+        mean: number;
+        median: number;
+    };
+    logp_stats: {
+        min: number;
+        max: number;
+        mean: number;
+        median: number;
+    };
+}
+
+export interface PredictionHistoryEntry {
+    smiles: string;
+    prediction: "Active" | "Inactive";
+    confidence: number;
+    probability: number;
+    timestamp: string;
+}
+
+export interface HistoryResponse {
+    predictions: PredictionHistoryEntry[];
+    count: number;
+    available: boolean;
+}
+
+export interface PDFExportResponse {
+    pdf: string; // base64
+    filename: string;
+    mime_type: string;
 }

@@ -5,7 +5,14 @@ import {
     ModelInfoResponse,
     ErrorResponse,
     MoleculeSVGResponse,
-    NameToSmilesResponse
+    MoleculeImageExportResponse,
+    NameToSmilesResponse,
+    SimilaritySearchResponse,
+    CalibrationData,
+    FeatureImportance,
+    DatasetStats,
+    HistoryResponse,
+    PDFExportResponse
 } from "@/types/api";
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL.length > 0)
@@ -130,5 +137,125 @@ export const api = {
             body: JSON.stringify({ name }),
         });
         return handleResponse<NameToSmilesResponse>(response);
+    },
+
+    /**
+     * Get prediction history from Redis
+     */
+    getHistory: async (limit = 50): Promise<HistoryResponse> => {
+        const response = await fetch(`${API_BASE_URL}/history?limit=${limit}`);
+        return handleResponse<HistoryResponse>(response);
+    },
+
+    /**
+     * Clear prediction history
+     */
+    clearHistory: async (): Promise<{ status: string; message: string }> => {
+        const response = await fetch(`${API_BASE_URL}/history`, {
+            method: "DELETE",
+        });
+        return handleResponse<{ status: string; message: string }>(response);
+    },
+
+    /**
+     * Search for similar compounds
+     */
+    similaritySearch: async (
+        smiles: string,
+        topK = 10,
+        threshold = 0.7
+    ): Promise<SimilaritySearchResponse> => {
+        const response = await fetch(`${API_BASE_URL}/similarity/search`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ smiles, top_k: topK, threshold }),
+        });
+        return handleResponse<SimilaritySearchResponse>(response);
+    },
+
+    /**
+     * Get calibration curve data
+     */
+    getCalibrationData: async (): Promise<CalibrationData> => {
+        const response = await fetch(`${API_BASE_URL}/model/calibration`);
+        return handleResponse<CalibrationData>(response);
+    },
+
+    /**
+     * Get feature importance data
+     */
+    getFeatureImportance: async (): Promise<FeatureImportance> => {
+        const response = await fetch(`${API_BASE_URL}/model/feature-importance`);
+        return handleResponse<FeatureImportance>(response);
+    },
+
+    /**
+     * Get dataset statistics
+     */
+    getDatasetStats: async (): Promise<DatasetStats> => {
+        const response = await fetch(`${API_BASE_URL}/dataset/stats`);
+        return handleResponse<DatasetStats>(response);
+    },
+
+    /**
+     * Export prediction as PDF
+     */
+    exportPDF: async (prediction: PredictionResponse): Promise<PDFExportResponse> => {
+        const response = await fetch(`${API_BASE_URL}/export/pdf`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(prediction),
+        });
+        return handleResponse<PDFExportResponse>(response);
+    },
+
+    /**
+     * Export molecule as SVG image file
+     */
+    exportSVG: async (
+        smiles: string,
+        width = 400,
+        height = 400
+    ): Promise<MoleculeImageExportResponse> => {
+        const response = await fetch(`${API_BASE_URL}/export/svg`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                smiles,
+                width,
+                height,
+                background: "white",
+            }),
+        });
+        return handleResponse<MoleculeImageExportResponse>(response);
+    },
+
+    /**
+     * Export molecule as PNG image file
+     */
+    exportPNG: async (
+        smiles: string,
+        width = 400,
+        height = 400
+    ): Promise<MoleculeImageExportResponse> => {
+        const response = await fetch(`${API_BASE_URL}/export/png`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                smiles,
+                width,
+                height,
+                background: "white",
+            }),
+        });
+        return handleResponse<MoleculeImageExportResponse>(response);
     }
 };

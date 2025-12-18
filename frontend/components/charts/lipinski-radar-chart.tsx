@@ -116,35 +116,6 @@ export function LipinskiRadarChart({
 
   const violations = data.filter((d) => !d.compliant).length;
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const item = payload[0].payload;
-      return (
-        <div className="rounded-lg border border-border bg-popover p-3 shadow-lg text-sm">
-          <p className="font-semibold text-popover-foreground">{item.fullName}</p>
-          <p className="text-muted-foreground">
-            Value:{" "}
-            <span className="font-medium text-popover-foreground">
-              {item.actual}
-              {item.unit}
-            </span>
-          </p>
-          <p className="text-muted-foreground">
-            Threshold:{" "}
-            <span className="font-medium text-popover-foreground">
-              ≤{item.threshold}
-              {item.unit}
-            </span>
-          </p>
-          <p className={item.compliant ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}>
-            {item.compliant ? "✓ Compliant" : "✗ Violation"}
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
     <div className={cn("w-full", className)} role="img" aria-label="Lipinski Rule of 5 compliance chart">
       {!compact && (
@@ -211,7 +182,7 @@ export function LipinskiRadarChart({
             fillOpacity={0.3}
             strokeWidth={compact ? 1.5 : 2}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip />
           {!compact && (
             <Legend
               wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }}

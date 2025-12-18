@@ -122,34 +122,6 @@ export function DescriptorsBarChart({
     },
   ];
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const item = payload[0].payload;
-      return (
-        <div className="rounded-lg border border-border bg-popover p-3 shadow-lg text-sm">
-          <p className="font-semibold text-popover-foreground">{item.name}</p>
-          <p className="text-muted-foreground">
-            Value:{" "}
-            <span className="font-medium text-popover-foreground">
-              {item.value}
-              {item.unit}
-            </span>
-          </p>
-          <p
-            className={
-              item.isOptimal
-                ? "text-emerald-600 dark:text-emerald-400"
-                : "text-amber-600 dark:text-amber-400"
-            }
-          >
-            {item.isOptimal ? "✓ Within optimal range" : "⚠ Outside optimal range"}
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
     <div className={cn("w-full", className)} role="img" aria-label="Molecular descriptors chart">
       {!compact && (
@@ -194,7 +166,7 @@ export function DescriptorsBarChart({
             axisLine={false}
             tickLine={false}
           />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: "hsl(var(--muted))", opacity: 0.3 }} />
+          <Tooltip cursor={{ fill: "hsl(var(--muted))", opacity: 0.3 }} />
           <Bar dataKey="normalizedValue" radius={[0, 4, 4, 0]} maxBarSize={compact ? 14 : 18}>
             {(compact ? data.slice(0, 4) : data).map((entry, index) => (
               <Cell

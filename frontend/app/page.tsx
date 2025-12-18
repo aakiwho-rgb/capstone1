@@ -16,6 +16,10 @@ import {
   TrendingUp,
   Shield,
   Search,
+  Sparkles,
+  TriangleAlert,
+  X,
+  ZoomIn,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -34,6 +38,7 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { LipinskiRadarChart } from "@/components/charts/lipinski-radar-chart";
 import { DescriptorsBarChart } from "@/components/charts/descriptors-bar-chart";
 import { ToggleTheme } from "@/components/ui/toggle-theme";
+import { ExportPDFButton } from "@/components/ui/export-pdf-button";
 import { api } from "@/lib/api";
 import type { PredictionResponse, ModelInfoResponse } from "@/types/api";
 import { cn } from "@/lib/utils";
@@ -157,8 +162,9 @@ export default function Dashboard() {
       const data = await api.predict(smilesString);
       setResult(data);
       toast.success("Prediction complete!");
-    } catch (error: any) {
-      toast.error(error.message || "An error occurred during prediction");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "An error occurred during prediction";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -191,6 +197,7 @@ export default function Dashboard() {
             <h1 className="text-base font-bold tracking-tight" style={{ fontFamily: 'Belanosima, sans-serif' }}>OncoScope</h1>
           </div>
           <div className="flex items-center gap-2">
+            {result && <ExportPDFButton prediction={result} />}
             <StatusBadge
               variant={systemStatus === "online" ? "success" : systemStatus === "offline" ? "error" : "neutral"}
               pulse={systemStatus === "online"}
@@ -272,7 +279,7 @@ export default function Dashboard() {
                               className="w-full text-left px-2 py-1.5 rounded text-xs hover:bg-muted transition-colors flex items-center gap-2 text-teal-600 dark:text-teal-400"
                             >
                               <Search className="h-3 w-3" />
-                              <span>Search PubChem for "{searchQuery}"</span>
+                              <span>Search PubChem for &quot;{searchQuery}&quot;</span>
                             </button>
                           </div>
                         )}
@@ -336,6 +343,8 @@ export default function Dashboard() {
 function ResultsBento({ result }: { result: PredictionResponse }) {
   const isActive = result.prediction === "Active";
 
+  const [showMoleculeModal, setShowMoleculeModal] = useState(false);
+
   const lipinskiStats = [
     { label: "MW", value: result.lipinski.MW, unit: "Da", threshold: 500 },
     { label: "LogP", value: result.lipinski.LogP, unit: "", threshold: 5 },
@@ -351,6 +360,46 @@ function ResultsBento({ result }: { result: PredictionResponse }) {
   ] : [];
 
   return (
+    <>
+    {/* Molecule Modal */}
+    {showMoleculeModal && (
+      <div 
+        className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+        onClick={() => setShowMoleculeModal(false)}
+      >
+        <div 
+          className="bg-background rounded-xl p-4 max-w-2xl w-full shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Atom className="h-5 w-5 text-teal-500" />
+              <h3 className="text-lg font-semibold">2D Molecular Structure</h3>
+            </div>
+            <button
+              onClick={() => setShowMoleculeModal(false)}
+              className="p-1 rounded-lg hover:bg-muted transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="bg-white rounded-lg p-4 flex items-center justify-center">
+            <MoleculeViewer smiles={result.smiles} width={500} height={400} />
+          </div>
+          <div className="mt-3 p-2 bg-muted/50 rounded-lg">
+            <p className="text-xs text-muted-foreground mb-1">SMILES</p>
+            <p className="text-sm font-mono break-all">{result.smiles}</p>
+          </div>
+          {result.descriptors?.MolecularFormula && (
+            <div className="mt-2 flex items-center gap-2">
+              <Beaker className="h-4 w-4 text-teal-500" />
+              <span className="text-sm">Formula: <strong className="font-mono">{result.descriptors.MolecularFormula}</strong></span>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+    
     <div className="grid grid-cols-4 gap-1.5 auto-rows-[minmax(80px,auto)]">
       {/* Prediction Result - Col span 2 */}
       <Card className={cn(
@@ -393,13 +442,21 @@ function ResultsBento({ result }: { result: PredictionResponse }) {
 
       {/* 2D Molecule Structure - Col span 2 */}
       <Card className="col-span-2 row-span-2 p-2 flex flex-col">
-        <div className="flex items-center gap-1.5 mb-1">
-          <Atom className="h-3.5 w-3.5 text-teal-500" />
-          <span className="text-xs font-medium">2D Structure</span>
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-1.5">
+            <Atom className="h-3.5 w-3.5 text-teal-500" />
+            <span className="text-xs font-medium">2D Structure</span>
+          </div>
+          <span className="text-[9px] text-muted-foreground flex items-center gap-1">
+            <ZoomIn className="h-3 w-3" /> Click to enlarge
+          </span>
         </div>
-        <div className="flex-1 flex items-center justify-center bg-muted/30 rounded-lg">
+        <button
+          onClick={() => setShowMoleculeModal(true)}
+          className="flex-1 flex items-center justify-center bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors cursor-zoom-in"
+        >
           <MoleculeViewer smiles={result.smiles} width={200} height={140} />
-        </div>
+        </button>
         <p className="text-[9px] font-mono text-muted-foreground mt-1 truncate">{result.smiles}</p>
       </Card>
 
@@ -423,6 +480,136 @@ function ResultsBento({ result }: { result: PredictionResponse }) {
           </div>
           <div className="h-[100px]">
             <DescriptorsBarChart descriptors={result.descriptors} compact />
+          </div>
+        </Card>
+      )}
+
+      {/* QED Score Card */}
+      {result.drug_likeness && (
+        <Card className={cn(
+          "col-span-2 p-2 border-2",
+          result.drug_likeness.qed >= 0.67 ? "border-teal-500/40 bg-teal-500/5" :
+          result.drug_likeness.qed >= 0.49 ? "border-blue-500/40 bg-blue-500/5" :
+          result.drug_likeness.qed >= 0.34 ? "border-amber-500/40 bg-amber-500/5" :
+          "border-rose-500/40 bg-rose-500/5"
+        )}>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-1.5">
+              <Sparkles className={cn(
+                "h-3.5 w-3.5",
+                result.drug_likeness.qed >= 0.67 ? "text-teal-500" :
+                result.drug_likeness.qed >= 0.49 ? "text-blue-500" :
+                result.drug_likeness.qed >= 0.34 ? "text-amber-500" :
+                "text-rose-500"
+              )} />
+              <span className="text-xs font-medium">QED Score</span>
+            </div>
+            <span className={cn(
+              "text-[10px] px-1.5 py-0.5 rounded font-medium",
+              result.drug_likeness.qed >= 0.67 ? "bg-teal-500/10 text-teal-600" :
+              result.drug_likeness.qed >= 0.49 ? "bg-blue-500/10 text-blue-600" :
+              result.drug_likeness.qed >= 0.34 ? "bg-amber-500/10 text-amber-600" :
+              "bg-rose-500/10 text-rose-600"
+            )}>
+              {result.drug_likeness.qed_category}
+            </span>
+          </div>
+          <div className="flex items-end gap-2">
+            <span className={cn(
+              "text-3xl font-bold tabular-nums",
+              result.drug_likeness.qed >= 0.67 ? "text-teal-600 dark:text-teal-400" :
+              result.drug_likeness.qed >= 0.49 ? "text-blue-600 dark:text-blue-400" :
+              result.drug_likeness.qed >= 0.34 ? "text-amber-600 dark:text-amber-400" :
+              "text-rose-600 dark:text-rose-400"
+            )}>
+              {result.drug_likeness.qed.toFixed(3)}
+            </span>
+            <span className="text-[10px] text-muted-foreground mb-1">/ 1.0</span>
+          </div>
+          <Progress 
+            value={result.drug_likeness.qed * 100} 
+            className={cn(
+              "h-1.5 mt-2",
+              result.drug_likeness.qed >= 0.67 ? "[&>div]:bg-teal-500" :
+              result.drug_likeness.qed >= 0.49 ? "[&>div]:bg-blue-500" :
+              result.drug_likeness.qed >= 0.34 ? "[&>div]:bg-amber-500" :
+              "[&>div]:bg-rose-500"
+            )} 
+          />
+        </Card>
+      )}
+
+      {/* Drug-Likeness Compliance Card */}
+      {result.drug_likeness && (
+        <Card className="col-span-2 p-2">
+          <div className="flex items-center gap-1.5 mb-2">
+            <Shield className="h-3.5 w-3.5 text-teal-500" />
+            <span className="text-xs font-medium">Compliance Rules</span>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5">
+            <div className={cn(
+              "p-1.5 rounded text-center",
+              result.drug_likeness.lipinski_compliant 
+                ? "bg-teal-500/10" 
+                : "bg-rose-500/10"
+            )}>
+              <p className="text-[9px] text-muted-foreground">Lipinski</p>
+              <p className={cn(
+                "text-xs font-semibold",
+                result.drug_likeness.lipinski_compliant 
+                  ? "text-teal-600 dark:text-teal-400" 
+                  : "text-rose-600 dark:text-rose-400"
+              )}>
+                {result.drug_likeness.lipinski_compliant ? "Pass" : `${result.drug_likeness.lipinski_violations} viol.`}
+              </p>
+            </div>
+            <div className={cn(
+              "p-1.5 rounded text-center",
+              result.drug_likeness.veber_compliant 
+                ? "bg-teal-500/10" 
+                : "bg-rose-500/10"
+            )}>
+              <p className="text-[9px] text-muted-foreground">Veber</p>
+              <p className={cn(
+                "text-xs font-semibold",
+                result.drug_likeness.veber_compliant 
+                  ? "text-teal-600 dark:text-teal-400" 
+                  : "text-rose-600 dark:text-rose-400"
+              )}>
+                {result.drug_likeness.veber_compliant ? "Pass" : "Fail"}
+              </p>
+            </div>
+            <div className={cn(
+              "p-1.5 rounded text-center",
+              result.drug_likeness.pains_count === 0 
+                ? "bg-teal-500/10" 
+                : "bg-rose-500/10"
+            )}>
+              <p className="text-[9px] text-muted-foreground">PAINS</p>
+              <p className={cn(
+                "text-xs font-semibold",
+                result.drug_likeness.pains_count === 0 
+                  ? "text-teal-600 dark:text-teal-400" 
+                  : "text-rose-600 dark:text-rose-400"
+              )}>
+                {result.drug_likeness.pains_count === 0 ? "Clear" : `${result.drug_likeness.pains_count} alert${result.drug_likeness.pains_count > 1 ? "s" : ""}`}
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* PAINS Alerts Warning */}
+      {result.drug_likeness && result.drug_likeness.pains_count > 0 && (
+        <Card className="col-span-4 p-2 border-amber-500/40 bg-amber-500/5">
+          <div className="flex items-start gap-2">
+            <TriangleAlert className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-medium text-amber-600 dark:text-amber-400">PAINS Alerts Detected</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                {result.drug_likeness.pains_alerts.join(", ")}
+              </p>
+            </div>
           </div>
         </Card>
       )}
@@ -491,5 +678,6 @@ function ResultsBento({ result }: { result: PredictionResponse }) {
         </Card>
       )}
     </div>
+    </>
   );
 }
