@@ -79,6 +79,34 @@ const ALL_COMPOUNDS = [
   { name: "Trifluoperazine", smiles: "CN1CCN(CCCN2c3ccccc3Sc3ccc(C(F)(F)F)cc32)CC1", type: "inactive", ic50: "Not Active" },
   { name: "Amprenavir", smiles: "CC(C)CN(C[C@@H](O)[C@H](Cc1ccccc1)NC(=O)O[C@H]1CCOC1)S(=O)(=O)c1ccc(N)cc1", type: "inactive", ic50: "Not Active" },
   { name: "Tirabrutinib", smiles: "CC#CC(=O)N1CC[C@@H](n2c(=O)n(-c3ccc(Oc4ccccc4)cc3)c3c(N)ncnc32)C1", type: "inactive", ic50: "7%" },
+  // === MORE ACTIVE HER2 INHIBITORS ===
+  { name: "Ibrutinib", smiles: "CC#CC(=O)N1CCC[C@H]1c1nc(-c2ccc(Oc3ccccc3)cc2)c2c(N)ncnc2n1", type: "active", ic50: "42 nM" },
+  { name: "Osimertinib", smiles: "COc1cc(N2CCN(C)CC2)c(NC(=O)C=C)cc1Nc1nccc(-c2cn(C)c3ccccc23)n1", type: "active", ic50: "15 nM" },
+  { name: "Mobocertinib", smiles: "COc1cc2ncnc(Nc3ccc(F)c(C#N)c3)c2cc1NC(=O)C=CC(C)(C)N1CCOCC1", type: "active", ic50: "20 nM" },
+  { name: "Lazertinib", smiles: "COc1cccc(NC(=O)C=C)c1Nc1nccc(-c2ccc(N3CCN(C)CC3)nc2)n1", type: "active", ic50: "12 nM" },
+  { name: "Olmutinib", smiles: "C=CC(=O)Nc1cc(Nc2nccc(-c3cn(C)c4ccccc34)n2)c(OC)cc1N1CCOCC1", type: "active", ic50: "9 nM" },
+  { name: "Rociletinib", smiles: "COc1cc(N2CCC(N3CCN(C)CC3)CC2)ccc1Nc1ncc(Cl)c(Nc2ccccc2S(=O)(=O)C(C)C)n1", type: "active", ic50: "21 nM" },
+  { name: "Naquotinib", smiles: "C=CC(=O)Nc1cccc(Nc2nc(Nc3ccc(N4CCN(C)CC4)cc3OC)ncc2Cl)c1", type: "active", ic50: "16 nM" },
+  { name: "Mavelertinib", smiles: "COc1cc(Nc2ncc(Cl)c(Nc3ccccc3S(=O)(=O)C(C)C)n2)ccc1N1CCC(N2CCOCC2)CC1", type: "active", ic50: "28 nM" },
+  { name: "Almonertinib", smiles: "C=CC(=O)Nc1cc(Nc2nccc(-c3cnn(C)c3)n2)c(OC)cc1N(C)CCN(C)C", type: "active", ic50: "5 nM" },
+  { name: "Furmonertinib", smiles: "COc1cc(N(C)CCN(C)C)c(NC(=O)C=C)cc1Nc1nccc(-c2c[nH]c3ncccc23)n1", type: "active", ic50: "8 nM" },
+  // === MORE INACTIVE COMPOUNDS ===
+  { name: "Aspirin", smiles: "CC(=O)Oc1ccccc1C(=O)O", type: "inactive", ic50: "Not Active" },
+  { name: "Ibuprofen", smiles: "CC(C)Cc1ccc(C(C)C(=O)O)cc1", type: "inactive", ic50: "Not Active" },
+  { name: "Metformin", smiles: "CN(C)C(=N)NC(=N)N", type: "inactive", ic50: "Not Active" },
+  { name: "Omeprazole", smiles: "COc1ccc2nc(CS(=O)c3ncc(C)c(OC)c3C)[nH]c2c1", type: "inactive", ic50: "Not Active" },
+  { name: "Atorvastatin", smiles: "CC(C)c1c(C(=O)Nc2ccccc2)c(-c2ccccc2)c(-c2ccc(F)cc2)n1CC[C@@H](O)C[C@@H](O)CC(=O)O", type: "inactive", ic50: "Not Active" },
+  { name: "Simvastatin", smiles: "CCC(C)(C)C(=O)O[C@H]1C[C@@H](C)C=C2C=C[C@H](C)[C@H](CC[C@@H]3C[C@@H](O)CC(=O)O3)[C@@H]12", type: "inactive", ic50: "Not Active" },
+  { name: "Losartan", smiles: "CCCCc1nc(Cl)c(CO)n1Cc1ccc(-c2ccccc2-c2nn[nH]n2)cc1", type: "inactive", ic50: "Not Active" },
+  { name: "Amlodipine", smiles: "CCOC(=O)C1=C(COCCN)NC(C)=C(C(=O)OC)C1c1ccccc1Cl", type: "inactive", ic50: "Not Active" },
+  { name: "Lisinopril", smiles: "NCCCC[C@H](N[C@@H](CCc1ccccc1)C(=O)O)C(=O)N1CCC[C@H]1C(=O)O", type: "inactive", ic50: "Not Active" },
+  { name: "Gabapentin", smiles: "NCC1(CC(=O)O)CCCCC1", type: "inactive", ic50: "Not Active" },
+  { name: "Sertraline", smiles: "CN[C@H]1CC[C@@H](c2ccc(Cl)c(Cl)c2)c2ccccc12", type: "inactive", ic50: "Not Active" },
+  { name: "Escitalopram", smiles: "CN(C)CCC[C@]1(c2ccc(F)cc2)OCc2cc(C#N)ccc21", type: "inactive", ic50: "Not Active" },
+  { name: "Tramadol", smiles: "COc1ccc(C2(O)CCCCC2CN(C)C)cc1", type: "inactive", ic50: "Not Active" },
+  { name: "Pantoprazole", smiles: "COc1ccnc(CS(=O)c2nc3ccc(OC(F)F)cc3[nH]2)c1OC", type: "inactive", ic50: "Not Active" },
+  { name: "Cetirizine", smiles: "OC(=O)COCCN1CCN(C(c2ccccc2)c2ccc(Cl)cc2)CC1", type: "inactive", ic50: "Not Active" },
+  { name: "Loratadine", smiles: "CCOC(=O)N1CCC(=C2c3ccc(Cl)cc3CCc3cccnc32)CC1", type: "inactive", ic50: "Not Active" },
 ] as const;
 
 export default function Dashboard() {
@@ -257,16 +285,9 @@ export default function Dashboard() {
                                   "w-full text-left px-2 py-1.5 rounded text-xs hover:bg-muted transition-colors flex items-center justify-between gap-2",
                                 )}
                               >
-                                <div className="flex items-center gap-2 min-w-0">
-                                  {compound.type === "active" ? (
-                                    <CheckCircle2 className="h-3 w-3 text-teal-500 shrink-0" />
-                                  ) : (
-                                    <AlertCircle className="h-3 w-3 text-rose-500 shrink-0" />
-                                  )}
-                                  <span className="font-medium truncate">{compound.name}</span>
-                                </div>
-                                <span className="font-mono text-[9px] text-muted-foreground truncate max-w-[120px]">
-                                  {compound.smiles.slice(0, 20)}...
+                                <span className="font-medium truncate">{compound.name}</span>
+                                <span className="font-mono text-[9px] text-muted-foreground truncate max-w-[140px]">
+                                  {compound.smiles.slice(0, 25)}...
                                 </span>
                               </button>
                             ))}
